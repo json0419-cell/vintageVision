@@ -1,0 +1,36 @@
+# Google App Engine configuration
+runtime: nodejs18
+
+env_variables:
+  NODE_ENV: production
+  GOOGLE_CLOUD_PROJECT_ID: PROJECT_ID
+  GOOGLE_CLOUD_REGION: us-central1
+
+automatic_scaling:
+  min_instances: 1
+  max_instances: 10
+  target_cpu_utilization: 0.6
+  target_throughput_utilization: 0.6
+
+resources:
+  cpu: 1
+  memory_gb: 1
+  disk_size_gb: 10
+
+handlers:
+- url: /api/.*
+  script: auto
+  secure: always
+
+- url: /.*
+  static_files: public/index.html
+  upload: public/index.html
+  secure: always
+
+- url: /(.*\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot))
+  static_files: public/\1
+  upload: public/(.*\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot))
+  secure: always
+
+
+

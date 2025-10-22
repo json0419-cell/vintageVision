@@ -1,5 +1,18 @@
+// Check authentication status
+function checkAuthStatus() {
+  const token = localStorage.getItem('authToken');
+  return token !== null;
+}
+
+// Redirect based on authentication
 function scrollToUpload() {
-  document.getElementById("upload").scrollIntoView({ behavior: "smooth" });
+  if (checkAuthStatus()) {
+    // User is logged in, redirect to dashboard
+    window.location.href = '/dashboard.html';
+  } else {
+    // User not logged in, redirect to sign in
+    window.location.href = '/signin.html';
+  }
 }
 
 function showResult() {
@@ -9,6 +22,15 @@ function showResult() {
   resultBox.classList.remove("d-none");
   resultText.textContent = "Your outfit resembles 1970s Bohemian Chic style!";
 }
+
+// Wait for DOM to load
+document.addEventListener('DOMContentLoaded', function() {
+  // Add event listener for Try It Now button
+  const tryItNowBtn = document.getElementById('tryItNowBtn');
+  if (tryItNowBtn) {
+    tryItNowBtn.addEventListener('click', scrollToUpload);
+  }
+});
 
 (function () {
   const nav = document.querySelector('.navbar');

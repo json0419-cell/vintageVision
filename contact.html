@@ -3,9 +3,198 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Contact | Vintage Vision</title>
+    <title>Contact | VintageVision</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet"/>
     <link rel="stylesheet" href="style.css"/>
+    <style>
+        body {
+            background: var(--bg-secondary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        
+        .hero-section {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 6rem 0 4rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.1"/><circle cx="10" cy="60" r="0.5" fill="white" opacity="0.1"/><circle cx="90" cy="40" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            opacity: 0.2;
+        }
+        
+        .hero-content h1 {
+            color: var(--text-white);
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .hero-content p {
+            color: var(--text-white);
+            opacity: 0.9;
+        }
+        
+        .hero-content {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .contact-img {
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+        }
+        
+        .contact-img:hover {
+            transform: scale(1.05);
+        }
+        
+        .contact-section {
+            padding: 4rem 0;
+        }
+        
+        .contact-card {
+            background: var(--bg-primary);
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            padding: 3rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .contact-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-xl);
+        }
+        
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        
+        .form-label {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 0.5rem;
+        }
+        
+        .form-control {
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            padding: 0.875rem 1rem;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: var(--bg-tertiary);
+        }
+        
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(31, 41, 55, 0.15);
+            background: var(--bg-primary);
+        }
+        
+        .btn-primary {
+            background: var(--primary-gradient);
+            border: none;
+            border-radius: 12px;
+            padding: 0.875rem 2rem;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+        
+        .contact-info {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        
+        .contact-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: #f8f9fa;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+        
+        .contact-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+        
+        .contact-icon {
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1rem;
+            color: white;
+            font-size: 1.2rem;
+        }
+        
+        .contact-details h5 {
+            margin-bottom: 0.25rem;
+            color: #2c3e50;
+        }
+        
+        .contact-details p {
+            margin-bottom: 0;
+            color: #6c757d;
+        }
+        
+        .success-message {
+            background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+            border: none;
+            border-radius: 12px;
+            padding: 2rem;
+            text-align: center;
+            color: #155724;
+        }
+        
+        .success-icon {
+            font-size: 3rem;
+            color: #28a745;
+            margin-bottom: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .hero-section {
+                padding: 4rem 0 2rem;
+            }
+            
+            .contact-card {
+                padding: 2rem;
+            }
+            
+            .contact-info {
+                padding: 1.5rem;
+            }
+        }
+    </style>
 </head>
 <body class="d-flex flex-column min-vh-100">
 
@@ -26,37 +215,139 @@
     </div>
 </nav>
 
-
-<main class="contact-page flex-grow-1 container pt-5 mt-5 my-5">
-    <div class="text-center mb-4">
-        <img src="images/contactme.png"
-             alt="Contact Me"
-             class="contact-img shadow-sm"
-             width="300" />
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <div class="hero-content text-center">
+            <img src="images/contactme.png"
+                 alt="Contact Me"
+                 class="contact-img mb-4"
+                 width="300" />
+            <h1 class="display-4 fw-bold mb-4">Get in Touch</h1>
+            <p class="lead fs-5 mb-0">
+                We'd love to hear from you! Send us a message and we'll respond as soon as possible.
+            </p>
+        </div>
     </div>
-    <h2 class="text-center mb-4">Get in Touch</h2>
+</section>
 
-    <form class="w-75 mx-auto" onsubmit="return showThankYou(event)">
-        <div class="mb-3">
-            <label for="name" class="form-label">Your Name</label>
-            <input type="text" id="name" class="form-control" required />
+<!-- Contact Section -->
+<main class="contact-section flex-grow-1">
+    <div class="container">
+        <div class="row g-4">
+            <!-- Contact Form -->
+            <div class="col-lg-8">
+                <div class="contact-card">
+                    <h2 class="h3 mb-4">Send us a Message</h2>
+                    <form id="contactForm" novalidate>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="name" class="form-label">Your Name</label>
+                                    <input type="text" id="name" class="form-control" placeholder="Enter your full name" required />
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="email" class="form-label">Your Email</label>
+                                    <input type="email" id="email" class="form-control" placeholder="Enter your email address" required />
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label for="subject" class="form-label">Subject</label>
+                            <input type="text" id="subject" class="form-control" placeholder="What's this about?" required />
+                        </div>
+                        <div class="form-group">
+                            <label for="message" class="form-label">Message</label>
+                            <textarea id="message" rows="5" class="form-control" placeholder="Tell us more about your inquiry..." required></textarea>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-send"></i> Send Message
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <!-- Success Message -->
+                    <div id="thankYou" class="success-message mt-4" style="display: none;">
+                        <div class="success-icon">
+                            <i class="bi bi-check-circle"></i>
+                        </div>
+                        <h4 class="mb-3">Message Sent Successfully!</h4>
+                        <p class="mb-0">Thanks for reaching out! We'll get back to you within 24 hours.</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Contact Information -->
+            <div class="col-lg-4">
+                <div class="contact-info">
+                    <h3 class="h4 mb-4">Contact Information</h3>
+                    
+                    <div class="contact-item">
+                        <div class="contact-icon">
+                            <i class="bi bi-envelope"></i>
+                        </div>
+                        <div class="contact-details">
+                            <h5>Email</h5>
+                            <p>hello@vintagevision.com</p>
+                        </div>
+                    </div>
+                    
+                    <div class="contact-item">
+                        <div class="contact-icon">
+                            <i class="bi bi-telephone"></i>
+                        </div>
+                        <div class="contact-details">
+                            <h5>Phone</h5>
+                            <p>+1 (555) 123-4567</p>
+                        </div>
+                    </div>
+                    
+                    <div class="contact-item">
+                        <div class="contact-icon">
+                            <i class="bi bi-geo-alt"></i>
+                        </div>
+                        <div class="contact-details">
+                            <h5>Address</h5>
+                            <p>123 Fashion Street<br>Style City, SC 12345</p>
+                        </div>
+                    </div>
+                    
+                    <div class="contact-item">
+                        <div class="contact-icon">
+                            <i class="bi bi-clock"></i>
+                        </div>
+                        <div class="contact-details">
+                            <h5>Business Hours</h5>
+                            <p>Mon - Fri: 9:00 AM - 6:00 PM<br>Sat: 10:00 AM - 4:00 PM</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Social Links -->
+                <div class="contact-info">
+                    <h3 class="h4 mb-4">Follow Us</h3>
+                    <div class="d-flex justify-content-center gap-3">
+                        <a href="#" class="btn btn-outline-primary btn-lg rounded-circle">
+                            <i class="bi bi-twitter"></i>
+                        </a>
+                        <a href="#" class="btn btn-outline-primary btn-lg rounded-circle">
+                            <i class="bi bi-instagram"></i>
+                        </a>
+                        <a href="#" class="btn btn-outline-primary btn-lg rounded-circle">
+                            <i class="bi bi-facebook"></i>
+                        </a>
+                        <a href="#" class="btn btn-outline-primary btn-lg rounded-circle">
+                            <i class="bi bi-linkedin"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="mb-3">
-            <label for="email" class="form-label">Your Email</label>
-            <input type="email" id="email" class="form-control" required />
-        </div>
-        <div class="mb-3">
-            <label for="message" class="form-label">Message</label>
-            <textarea id="message" rows="4" class="form-control" required></textarea>
-        </div>
-        <button type="submit" class="btn btn-dark w-100">Send Message</button>
-    </form>
-
-    <div id="thankYou" class="text-center mt-4 d-none">
-        <h4>Thanks for reaching out! We'll respond soon.</h4>
     </div>
 </main>
-
 
 <footer class="text-center py-4 bg-dark text-light mt-auto">
     © 2025 Vintage Vision. All Rights Reserved.
@@ -65,8 +356,45 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="script.js"></script>
 
-<!-- Fix: remove gap under fixed-top navbar by applying real height -->
 <script>
+    // Contact form handler
+    document.addEventListener('DOMContentLoaded', function() {
+        const contactForm = document.getElementById('contactForm');
+        const thankYouDiv = document.getElementById('thankYou');
+        
+        contactForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            // Get form data
+            const formData = new FormData(contactForm);
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const subject = document.getElementById('subject').value;
+            const message = document.getElementById('message').value;
+            
+            // Simple validation
+            if (!name || !email || !subject || !message) {
+                alert('Please fill in all fields.');
+                return;
+            }
+            
+            // Show success message
+            contactForm.style.display = 'none';
+            thankYouDiv.style.display = 'block';
+            
+            // Scroll to success message
+            thankYouDiv.scrollIntoView({ behavior: 'smooth' });
+            
+            // Reset form after 5 seconds
+            setTimeout(() => {
+                contactForm.reset();
+                contactForm.style.display = 'block';
+                thankYouDiv.style.display = 'none';
+            }, 5000);
+        });
+    });
+    
+    // Fix: remove gap under fixed-top navbar by applying real height
     (function () {
         const setPad = () => {
             const nav = document.querySelector('.navbar');

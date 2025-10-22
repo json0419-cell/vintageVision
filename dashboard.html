@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | VintageVision</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .dashboard-card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s ease-in-out;
+        }
+        .dashboard-card:hover {
+            transform: translateY(-2px);
+        }
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .upload-area {
+            border: 2px dashed #dee2e6;
+            border-radius: 10px;
+            padding: 2rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .upload-area:hover {
+            border-color: #667eea;
+            background-color: #f8f9ff;
+        }
+        .upload-area.dragover {
+            border-color: #667eea;
+            background-color: #e3f2fd;
+        }
+        .analysis-item {
+            border-left: 4px solid #667eea;
+            padding-left: 1rem;
+            margin-bottom: 1rem;
+        }
+        .era-badge {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+        }
+        .confidence-bar {
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        .confidence-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #28a745, #20c997);
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top shadow-sm">
+    <div class="container-fluid">
+        <a class="navbar-brand fw-semibold" href="index.html">VintageVision</a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto">
+                <li class="nav-item"><a class="nav-link" href="index.html">Home</a></li>
+                <li class="nav-item"><a class="nav-link" href="about.html">About</a></li>
+                <li class="nav-item"><a class="nav-link" href="contact.html">Contact</a></li>
+                <li class="nav-item"><a class="nav-link active" href="#" id="userMenu">Dashboard</a></li>
+                <li class="nav-item">
+                    <button class="btn btn-outline-light btn-sm" onclick="logout()">
+                        <i class="bi bi-box-arrow-right"></i> Logout
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<main class="flex-grow-1 pt-5 mt-5">
+    <div class="container-fluid">
+        <!-- Welcome Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h1 class="h2 mb-1">Welcome back, <span id="userName">User</span>!</h1>
+                <p class="text-muted">Analyze your fashion style and discover new trends</p>
+            </div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="card dashboard-card stat-card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-camera2 fs-1 mb-2"></i>
+                        <h3 class="card-title" id="totalAnalyses">0</h3>
+                        <p class="card-text">Total Analyses</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card dashboard-card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-star fs-1 mb-2 text-warning"></i>
+                        <h3 class="card-title" id="avgConfidence">0</h3>
+                        <p class="card-text">Avg Confidence</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card dashboard-card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-calendar3 fs-1 mb-2 text-info"></i>
+                        <h3 class="card-title" id="memberSince">-</h3>
+                        <p class="card-text">Member Since</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="card dashboard-card">
+                    <div class="card-body text-center">
+                        <i class="bi bi-clock-history fs-1 mb-2 text-success"></i>
+                        <h3 class="card-title" id="lastLogin">-</h3>
+                        <p class="card-text">Last Login</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upload Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card dashboard-card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-cloud-upload"></i> Upload & Analyze</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="upload-area" id="uploadArea">
+                            <i class="bi bi-cloud-upload fs-1 text-muted mb-3"></i>
+                            <h5>Drop your image here or click to browse</h5>
+                            <p class="text-muted">Supports JPEG, PNG, and WebP formats</p>
+                            <input type="file" id="imageUpload" accept="image/*" class="d-none">
+                            <button class="btn btn-primary" onclick="document.getElementById('imageUpload').click()">
+                                Choose File
+                            </button>
+                        </div>
+                        <div id="uploadProgress" class="mt-3 d-none">
+                            <div class="progress">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                            </div>
+                            <p class="text-center mt-2">Analyzing your image...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analysis Results -->
+        <div class="row mb-4" id="analysisResults" style="display: none;">
+            <div class="col-12">
+                <div class="card dashboard-card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-graph-up"></i> Analysis Results</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <img id="analyzedImage" class="img-fluid rounded" alt="Analyzed image">
+                            </div>
+                            <div class="col-md-6">
+                                <h6>Style Era</h6>
+                                <span class="era-badge" id="styleEra">-</span>
+                                
+                                <h6 class="mt-3">Confidence</h6>
+                                <div class="confidence-bar">
+                                    <div class="confidence-fill" id="confidenceBar" style="width: 0%"></div>
+                                </div>
+                                <small class="text-muted" id="confidenceText">0%</small>
+                                
+                                <h6 class="mt-3">Key Elements</h6>
+                                <p id="keyElements">-</p>
+                                
+                                <h6 class="mt-3">Recommendations</h6>
+                                <p id="recommendations">-</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Analyses -->
+        <div class="row mb-4">
+            <div class="col-md-8">
+                <div class="card dashboard-card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Analyses</h5>
+                    </div>
+                    <div class="card-body">
+                        <div id="recentAnalyses">
+                            <div class="text-center text-muted">
+                                <i class="bi bi-hourglass-split fs-1"></i>
+                                <p>No analyses yet. Upload your first image to get started!</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card dashboard-card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-palette"></i> Style Profile</h5>
+                    </div>
+                    <div class="card-body">
+                        <h6>Favorite Eras</h6>
+                        <div id="favoriteEras">
+                            <p class="text-muted small">Upload images to see your style preferences</p>
+                        </div>
+                        
+                        <h6 class="mt-3">Color Preferences</h6>
+                        <div id="colorPreferences">
+                            <p class="text-muted small">Color analysis will appear here</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<footer class="text-center py-4 bg-dark text-light mt-auto">
+    © 2025 Vintage Vision. All Rights Reserved.
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="dashboard.js"></script>
+</body>
+</html>
+
+
+

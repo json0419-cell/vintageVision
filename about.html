@@ -5,11 +5,165 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>About | VintageVision</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet"/>
     <link rel="stylesheet" href="style.css" />
- 
+    <style>
+        body {
+            background: var(--bg-secondary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
         
-       
-  
+        .hero-section {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 6rem 0 4rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.1"/><circle cx="10" cy="60" r="0.5" fill="white" opacity="0.1"/><circle cx="90" cy="40" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            opacity: 0.2;
+        }
+        
+        .hero-content h1 {
+            color: var(--text-white);
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+        
+        .hero-content p {
+            color: var(--text-white);
+            opacity: 0.9;
+        }
+        
+        .hero-content {
+            position: relative;
+            z-index: 1;
+        }
+        
+        .about-logo {
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease;
+        }
+        
+        .about-logo:hover {
+            transform: scale(1.05);
+        }
+        
+        .content-section {
+            padding: 4rem 0;
+        }
+        
+        .section-card {
+            background: var(--bg-primary);
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            padding: 3rem;
+            margin-bottom: 2rem;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .section-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-xl);
+        }
+        
+        .section-icon {
+            width: 60px;
+            height: 60px;
+            background: var(--primary-gradient);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            color: white;
+            font-size: 1.5rem;
+        }
+        
+        .section-title {
+            color: var(--text-primary);
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+        }
+        
+        .section-text {
+            color: var(--text-secondary);
+            line-height: 1.8;
+            font-size: 1.1rem;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-top: 3rem;
+        }
+        
+        .feature-item {
+            text-align: center;
+            padding: 2rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+        }
+        
+        .feature-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+        
+        .feature-icon {
+            font-size: 2.5rem;
+            color: #667eea;
+            margin-bottom: 1rem;
+        }
+        
+        .stats-section {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 4rem 0;
+            margin: 3rem 0;
+        }
+        
+        .stat-item {
+            text-align: center;
+            padding: 1rem;
+        }
+        
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-label {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        @media (max-width: 768px) {
+            .hero-section {
+                padding: 4rem 0 2rem;
+            }
+            
+            .section-card {
+                padding: 2rem;
+            }
+            
+            .feature-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 <body class="d-flex flex-column min-vh-100">
 
@@ -30,52 +184,144 @@
     </div>
 </nav>
 
-<<main class="about-page flex-grow-1 pt-5 mt-5 container text-center">
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <div class="hero-content text-center">
+            <img src="images/vintagevisionLogo.png"
+                 alt="VintageVision Logo"
+                 class="about-logo mb-4"
+                 width="200" />
+            <h1 class="display-4 fw-bold mb-4">About VintageVision</h1>
+            <p class="lead fs-5 mb-0">
+                Discover your fashion story with AI-powered style analysis
+            </p>
+        </div>
+    </div>
+</section>
 
-    <h1>About VintageVision</h1>
-    <img src="images/vintagevisionLogo.png"
-         alt="VintageVision Logo"
-         class="about-logo shadow-sm"
-         width="200" />
-    <p>
-        VintageVision is an AI-powered platform that analyzes any photo to recognize outfits and recommend similar clothing from modern stores.
-        Our mission is to help people rediscover style — whether it’s inspired by a vintage look, a streetwear snapshot, or your favorite influencer’s post.
-    </p>
+<!-- Main Content -->
+<main class="content-section flex-grow-1">
+    <div class="container">
+        <!-- Mission Section -->
+        <div class="section-card text-center">
+            <div class="section-icon">
+                <i class="bi bi-palette"></i>
+            </div>
+            <h2 class="section-title">Our Mission</h2>
+            <p class="section-text">
+                VintageVision is an AI-powered platform that analyzes any photo to recognize outfits and recommend similar clothing from modern stores.
+                Our mission is to help people rediscover style — whether it's inspired by a vintage look, a streetwear snapshot, or your favorite influencer's post.
+            </p>
+        </div>
 
-    <hr class="section-divider">
+        <!-- What We Do -->
+        <div class="section-card">
+            <div class="section-icon">
+                <i class="bi bi-camera"></i>
+            </div>
+            <h2 class="section-title text-center">What We Do</h2>
+            <p class="section-text text-center">
+                Upload a photo — from an old portrait to a picture you just took — and VintageVision identifies the key clothing pieces in it.
+                Our AI detects items like jackets, skirts, or accessories and then finds modern, shoppable equivalents from today's fashion brands.
+                Whether you're exploring trends, recreating timeless looks, or finding your next outfit idea, VintageVision makes visual fashion search simple.
+            </p>
+        </div>
 
-    <h2>What We Do</h2>
-    <p>
-        Upload a photo — from an old portrait to a picture you just took — and VintageVision identifies the key clothing pieces in it.
-        Our AI detects items like jackets, skirts, or accessories and then finds modern, shoppable equivalents from today’s fashion brands.
-        Whether you’re exploring trends, recreating timeless looks, or finding your next outfit idea, VintageVision makes visual fashion search simple.
-    </p>
+        <!-- Technology Section -->
+        <div class="section-card">
+            <div class="section-icon">
+                <i class="bi bi-cpu"></i>
+            </div>
+            <h2 class="section-title text-center">Our Technology</h2>
+            <p class="section-text text-center">
+                Our computer vision models are trained on diverse fashion datasets spanning decades of style.
+                Using deep learning, the platform recognizes patterns, textures, and silhouettes, providing accurate clothing matches in seconds.
+                Behind the scenes, we combine AI precision with a deep appreciation for fashion history — connecting the past and present in one effortless experience.
+            </p>
+        </div>
 
-    <hr class="section-divider">
+        <!-- Features Grid -->
+        <div class="feature-grid">
+            <div class="feature-item">
+                <div class="feature-icon">
+                    <i class="bi bi-eye"></i>
+                </div>
+                <h4>Computer Vision</h4>
+                <p>Advanced AI that recognizes clothing patterns, textures, and styles from any image.</p>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon">
+                    <i class="bi bi-search"></i>
+                </div>
+                <h4>Smart Matching</h4>
+                <p>Find modern equivalents of vintage pieces from today's top fashion brands.</p>
+            </div>
+            <div class="feature-item">
+                <div class="feature-icon">
+                    <i class="bi bi-lightning"></i>
+                </div>
+                <h4>Instant Results</h4>
+                <p>Get style recommendations and shopping links in seconds, not hours.</p>
+            </div>
+        </div>
 
-    <h3>Our Technology</h3>
-    <p>
-        Our computer vision models are trained on diverse fashion datasets spanning decades of style.
-        Using deep learning, the platform recognizes patterns, textures, and silhouettes, providing accurate clothing matches in seconds.
-        Behind the scenes, we combine AI precision with a deep appreciation for fashion history — connecting the past and present in one effortless experience.
-    </p>
+        <!-- Stats Section -->
+        <div class="stats-section rounded-3">
+            <div class="container">
+                <div class="row">
+                    <div class="col-md-3 col-6">
+                        <div class="stat-item">
+                            <div class="stat-number">10K+</div>
+                            <div class="stat-label">Photos Analyzed</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="stat-item">
+                            <div class="stat-number">500+</div>
+                            <div class="stat-label">Fashion Brands</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="stat-item">
+                            <div class="stat-number">95%</div>
+                            <div class="stat-label">Accuracy Rate</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="stat-item">
+                            <div class="stat-number">24/7</div>
+                            <div class="stat-label">AI Analysis</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-    <hr class="section-divider">
+        <!-- Team Section -->
+        <div class="section-card text-center">
+            <div class="section-icon">
+                <i class="bi bi-people"></i>
+            </div>
+            <h2 class="section-title">Our Team</h2>
+            <p class="section-text">
+                We're a small but passionate team of engineers, designers, and fashion enthusiasts.
+                Together, we're reimagining how people discover clothing — with technology that understands both style and individuality.
+            </p>
+        </div>
 
-    <h4>Our Team</h4>
-    <p>    
-        We’re a small but passionate team of engineers, designers, and fashion enthusiasts.
-        Together, we’re reimagining how people discover clothing — with technology that understands both style and individuality.
-    </p>
-
-    <hr class="section-divider">
-
-    <h5>Our Vision</h5>
-    <p>         
-        At VintageVision, we believe style is timeless.
-        By combining artificial intelligence with creative design, we help people express themselves — and make fashion discovery more intelligent, inclusive, and fun.
-    </p>
-
+        <!-- Vision Section -->
+        <div class="section-card text-center">
+            <div class="section-icon">
+                <i class="bi bi-star"></i>
+            </div>
+            <h2 class="section-title">Our Vision</h2>
+            <p class="section-text">
+                At VintageVision, we believe style is timeless.
+                By combining artificial intelligence with creative design, we help people express themselves — and make fashion discovery more intelligent, inclusive, and fun.
+            </p>
+        </div>
+    </div>
 </main>
 
 <footer class="text-center py-4 bg-dark text-light mt-auto">
