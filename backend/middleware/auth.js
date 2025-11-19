@@ -1,7 +1,11 @@
-// Simple authentication middleware for demo
+// Authentication middleware
 const jwt = require('jsonwebtoken');
+const { Firestore } = require('@google-cloud/firestore');
+const logger = require('../utils/logger');
 
-const authenticateToken = (req, res, next) => {
+const db = new Firestore();
+
+const authenticateToken = async (req, res, next) => {
   const authHeader = req.headers['authorization'];
   const token = authHeader && authHeader.split(' ')[1];
 
@@ -11,14 +15,22 @@ const authenticateToken = (req, res, next) => {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET || 'demo-secret');
-    req.user = { id: decoded.userId, email: decoded.email };
+    const userDoc = await db.collection('users').doc(decoded.userId).get();
+    
+    if (!userDoc.exists) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+
+    req.user = { id: decoded.userId, ...userDoc.data() };
     next();
   } catch (error) {
+    logger.error('Token verification failed:', error);
     return res.status(403).json({ error: 'Invalid or expired token' });
   }
 };
 
 module.exports = authenticateToken;
+
 
 
 

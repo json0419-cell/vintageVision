@@ -71,10 +71,50 @@ class AuthAPI {
             throw error;
         }
     }
+
+    async getGoogleAuthUrl() {
+        try {
+            const response = await fetch(`${this.apiBase}/auth/google`);
+            const result = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(result.error || 'Failed to get Google auth URL');
+            }
+
+            return result.authUrl;
+        } catch (error) {
+            console.error('Google auth URL error:', error);
+            throw error;
+        }
+    }
+
+    async handleGoogleCallback(code) {
+        try {
+            const response = await fetch(`${this.apiBase}/auth/google/callback`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ code }),
+            });
+
+            const result = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(result.error || 'Google authentication failed');
+            }
+
+            return result;
+        } catch (error) {
+            console.error('Google callback error:', error);
+            throw error;
+        }
+    }
 }
 
 // Global auth API instance
 window.authAPI = new AuthAPI();
+
 
 
 

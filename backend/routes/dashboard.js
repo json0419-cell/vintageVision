@@ -1,6 +1,6 @@
 const express = require('express');
 const { Firestore } = require('@google-cloud/firestore');
-const { authenticateToken } = require('./auth');
+const authenticateToken = require('../middleware/auth');
 const logger = require('../utils/logger');
 
 const router = express.Router();
@@ -155,6 +155,7 @@ router.get('/activity', authenticateToken, async (req, res) => {
 });
 
 module.exports = router;
+
 
 
 

@@ -49,8 +49,8 @@ app.use(morgan('combined', { stream: { write: message => logger.info(message.tri
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Static files
-app.use(express.static(path.join(__dirname, '../public')));
+// Static files - serve frontend directory
+app.use(express.static(path.join(__dirname, '../frontend')));
 
 // API Routes
 app.use('/api/auth', authRoutes);
@@ -66,9 +66,9 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Serve React app for all non-API routes
+// Serve frontend app for all non-API routes
 app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/index.html'));
+  res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
 
 // Error handling middleware
@@ -91,6 +91,7 @@ app.listen(PORT, () => {
 });
 
 module.exports = app;
+
 
 
 

@@ -51,24 +51,30 @@ VintageVision is an enterprise-grade Single Page Application (SPA) that uses Goo
 
 ```
 vintageVision/
-├── backend/
+├── frontend/                # Frontend files directory
+│   ├── *.html              # Frontend pages (index.html, signin.html, dashboard.html, etc.)
+│   ├── *.js                # Frontend JavaScript (script.js, auth.js, dashboard.js)
+│   ├── style.css           # Stylesheet
+│   └── images/             # Static image resources
+├── backend/                # Backend files directory
 │   ├── routes/
 │   │   ├── auth.js          # Authentication endpoints
 │   │   ├── upload.js        # Image upload and analysis
 │   │   └── dashboard.js     # Dashboard data endpoints
+│   ├── middleware/
+│   │   └── auth.js          # Authentication middleware
 │   ├── utils/
 │   │   └── logger.js        # Winston logging configuration
+│   ├── tests/
+│   │   └── api.test.js      # API tests
 │   ├── server.js            # Express server setup
 │   ├── package.json         # Dependencies and scripts
 │   └── config.env.example   # Environment variables template
-├── images/                  # Static images
-├── *.html                   # Frontend pages
-├── *.js                     # Frontend JavaScript
-├── *.css                    # Stylesheets
 ├── Dockerfile              # Docker configuration
 ├── app.yaml                # Google App Engine config
 ├── cloud-run.yaml          # Google Cloud Run config
-└── deploy.sh               # Deployment script
+├── deploy.sh               # Deployment script
+└── README.md               # Project documentation
 ```
 
 ## 🛠️ Setup Instructions
@@ -80,7 +86,7 @@ vintageVision/
 
 ### Local Development
 
-1. **Clone and install dependencies**:
+1. **Install dependencies**:
    ```bash
    cd backend
    npm install
@@ -88,19 +94,28 @@ vintageVision/
 
 2. **Set up environment variables**:
    ```bash
+   # In the backend directory
    cp config.env.example .env
-   # Edit .env with your configuration
+   # Edit the .env file and fill in your configuration
    ```
 
-3. **Required Google Cloud setup**:
+3. **Google Cloud setup** (Optional, for production):
    - Enable Vision API, Firestore, and Cloud Storage
-   - Create service account with appropriate permissions
-   - Download service account key as `google-credentials.json`
-   - Get Gemini API key from Google AI Studio
+   - Create a service account and download the credentials file as `google-credentials.json`
+   - Get Gemini API Key from Google AI Studio
 
 4. **Start the development server**:
    ```bash
+   # In the backend directory
    npm run dev
+   ```
+   
+   After the server starts, visit `http://localhost:3000` to use the application.
+
+5. **Start the production server**:
+   ```bash
+   # In the backend directory
+   npm start
    ```
 
 ### Google Cloud Deployment
@@ -206,6 +221,7 @@ For technical support or questions about this enterprise implementation, please 
 ---
 
 **Built with ❤️ using Google Cloud Platform, Express.js, and modern web technologies.**
+
 
 
 

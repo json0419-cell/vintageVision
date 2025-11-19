@@ -1,19 +1,19 @@
 :root {
     --nav-h: 56px;
     
-    /* 主色调 - 黑色系 */
+    /* Primary colors - Black tones */
     --primary-color: #1F2937;
     --primary-dark: #111827;
     --primary-light: #374151;
     --primary-gradient: linear-gradient(135deg, #1F2937 0%, #111827 100%);
     
-    /* 辅助色 - 灰色系 */
+    /* Accent colors - Gray tones */
     --accent-color: #6B7280;
     --accent-dark: #4B5563;
     --accent-light: #9CA3AF;
     --accent-gradient: linear-gradient(135deg, #6B7280 0%, #4B5563 100%);
     
-    /* 中性色 - 黑白灰系统 */
+    /* Neutral colors - Black, white, gray system */
     --text-primary: #111827;
     --text-secondary: #374151;
     --text-light: #6B7280;
@@ -25,7 +25,7 @@
     --bg-dark-secondary: #1F2937;
     --bg-dark-tertiary: #374151;
     
-    /* 边框和阴影 */
+    /* Borders and shadows */
     --border-color: #E5E7EB;
     --border-dark: #374151;
     --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
@@ -34,7 +34,7 @@
     --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
     --shadow-dark: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
     
-    /* 状态色 - 保持对比度 */
+    /* Status colors - Maintain contrast */
     --success-color: #059669;
     --warning-color: #D97706;
     --error-color: #DC2626;
@@ -51,7 +51,7 @@ body {
     background-color: var(--bg-secondary);
 }
 
-/* 导航栏样式 */
+/* Navigation bar styles */
 .navbar-dark {
     background: var(--primary-gradient) !important;
     box-shadow: var(--shadow-md);
@@ -79,7 +79,7 @@ body {
     opacity: 1;
 }
 
-/* Hero区域 */
+/* Hero section */
 .hero {
     background: var(--primary-gradient);
     background-image: url('images/mondrian.jpg');
@@ -136,7 +136,7 @@ body {
     color: white;
 }
 
-/* 卡片样式 */
+/* Card styles */
 .card-elev {
     border: 1px solid var(--border-color);
     border-radius: 16px;
@@ -149,7 +149,7 @@ body {
     transform: translateY(-2px);
 }
 
-/* 按钮样式 */
+/* Button styles */
 .btn-primary {
     background: var(--primary-gradient);
     border: none;
@@ -178,7 +178,7 @@ body {
     box-shadow: var(--shadow-md);
 }
 
-/* 表单样式 */
+/* Form styles */
 .form-control {
     border: 2px solid var(--border-color);
     border-radius: 12px;
@@ -199,7 +199,7 @@ body {
     margin-bottom: 0.5rem;
 }
 
-/* 密码强度条 */
+/* Password strength bar */
 .strength-bar {
     height: 6px;
     border-radius: 4px;
@@ -218,7 +218,7 @@ body {
 .strength-good   { background: var(--accent-color); }
 .strength-strong { background: var(--success-color); }
 
-/* 图片样式 */
+/* Image styles */
 .contact-img, .about-logo, .side-illustration {
     border-radius: 16px;
     box-shadow: var(--shadow-md);
@@ -230,7 +230,7 @@ body {
     box-shadow: var(--shadow-lg);
 }
 
-/* About页面样式 */
+/* About page styles */
 .about-page h1, .about-page h2, .about-page h3, .about-page h4, .about-page h5 {
     font-weight: 700;
     color: var(--text-primary);
@@ -250,14 +250,14 @@ body {
     margin: 1rem auto 2rem auto;
 }
 
-/* 页脚样式 */
+/* Footer styles */
 footer {
     background: var(--text-primary) !important;
     color: white;
     margin-top: auto;
 }
 
-/* 响应式设计 */
+/* Responsive design */
 @media (max-width: 768px) {
     .hero {
         background-position: center top;
@@ -274,7 +274,7 @@ footer {
     }
 }
 
-/* 动画效果 */
+/* Animation effects */
 @keyframes fadeInUp {
     from {
         opacity: 0;
@@ -290,7 +290,7 @@ footer {
     animation: fadeInUp 0.6s ease-out;
 }
 
-/* 上传区域样式 */
+/* Upload area styles */
 #upload .text-center {
     display: flex;
     flex-direction: column;

@@ -17,7 +17,6 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ms-auto">
-                <li class="nav-item"><a class="nav-link active" href="index.html">Home</a></li>
                 <li class="nav-item"><a class="nav-link" href="about.html">About</a></li>
                 <li class="nav-item"><a class="nav-link" href="contact.html">Contact</a></li>
                 <li class="nav-item"><a class="nav-link" href="signin.html">Sign In</a></li>
@@ -26,28 +25,13 @@
     </div>
 </nav>
 
-
 <header class="hero d-flex align-items-center justify-content-center text-center text-light">
     <div class="px-3">
         <h1 class="display-5 fw-bold">Discover the Era Behind Your Style</h1>
         <p class="lead mb-4">Upload your photo and let AI reveal your fashion story.</p>
-        <button class="btn btn-light btn-lg" onclick="scrollToUpload()">Try It Now</button>
+        <button class="btn btn-light btn-lg" id="tryItNowBtn">Try It Now</button>
     </div>
 </header>
-
-<section class="container my-5" id="upload">
-    <h2 class="text-center mb-4">Analyze Your Outfit</h2>
-    <div class="text-center">
-        <input type="file" id="photoUpload" class="form-control" />
-        <button id="analyzeBtn" class="btn btn-dark">Analyze</button>
-    </div>
-
-    <div id="resultBox" class="mt-4 text-center d-none">
-        <h4>Result:</h4>
-        <p id="resultText">Your outfit resembles 1970s Bohemian Chic style!</p>
- 
-    </div>
-</section>
 
 <footer class="text-center py-4 bg-dark text-light">
     © 2025 Vintage Vision. All Rights Reserved.

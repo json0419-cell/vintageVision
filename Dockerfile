@@ -10,22 +10,14 @@ COPY backend/package*.json ./
 # Install dependencies
 RUN npm ci --only=production
 
-# Copy application code
+# Copy backend application code
 COPY backend/ ./
-COPY *.html ./
-COPY *.js ./
-COPY *.css ./
-COPY images/ ./images/
+
+# Copy frontend files to frontend directory
+COPY frontend/ ./frontend/
 
 # Create logs directory
 RUN mkdir -p logs
-
-# Create public directory for static files
-RUN mkdir -p public
-RUN cp *.html public/ 2>/dev/null || true
-RUN cp *.js public/ 2>/dev/null || true
-RUN cp *.css public/ 2>/dev/null || true
-RUN cp -r images public/ 2>/dev/null || true
 
 # Expose port
 EXPOSE 8080
@@ -40,6 +32,7 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 
 # Start the application
 CMD ["npm", "start"]
+
 
 
 

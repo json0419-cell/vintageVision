@@ -23,14 +23,15 @@ handlers:
   secure: always
 
 - url: /.*
-  static_files: public/index.html
-  upload: public/index.html
+  static_files: frontend/index.html
+  upload: frontend/index.html
   secure: always
 
 - url: /(.*\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot))
-  static_files: public/\1
-  upload: public/(.*\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot))
+  static_files: frontend/\1
+  upload: frontend/(.*\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot))
   secure: always
+
 
 
 

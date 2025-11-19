@@ -4,7 +4,7 @@ const { Storage } = require('@google-cloud/storage');
 const vision = require('@google-cloud/vision');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { Firestore } = require('@google-cloud/firestore');
-const { authenticateToken } = require('./auth');
+const authenticateToken = require('../middleware/auth');
 const logger = require('../utils/logger');
 
 const router = express.Router();
@@ -240,6 +240,7 @@ router.get('/:analysisId', authenticateToken, async (req, res) => {
 });
 
 module.exports = router;
+
 
 
 
