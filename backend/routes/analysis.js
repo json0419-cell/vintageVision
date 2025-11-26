@@ -797,4 +797,48 @@ router.get('/results', requireGoogleUser, async (req, res) => {
     }
 });
 
+/**
+ * Delete analysis result
+ * DELETE /api/analysis/result/:resultId
+ */
+router.delete('/result/:resultId', requireGoogleUser, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { resultId } = req.params;
+
+        logger.info(`[Delete result] User ${userId} attempting to delete result ${resultId}`);
+
+        const doc = await db.collection('results').doc(resultId).get();
+        if (!doc.exists) {
+            return res.status(404).json({ error: 'Result not found' });
+        }
+
+        const data = doc.data();
+        if (data.userId !== userId) {
+            logger.warn(`[Delete result] User ${userId} attempted to delete result belonging to ${data.userId}`);
+            return res.status(403).json({ error: 'You do not have permission to delete this result' });
+        }
+
+        // Delete result document
+        await db.collection('results').doc(resultId).delete();
+
+        logger.info(`[Delete result] Successfully deleted result ${resultId} for user ${userId}`);
+
+        res.json({
+            success: true,
+            message: 'Analysis result deleted successfully'
+        });
+    } catch (error) {
+        logger.error(`[Delete result] Delete error:`, {
+            error: error.message,
+            stack: error.stack,
+            resultId: req.params.resultId
+        });
+        res.status(500).json({
+            error: 'Failed to delete result',
+            message: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
+        });
+    }
+});
+
 module.exports = router;

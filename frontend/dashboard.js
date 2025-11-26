@@ -340,6 +340,34 @@ async function deletePhoto(photoId) {
     }
 }
 
+// Delete analysis result
+async function deleteAnalysisResult(resultId) {
+    if (!resultId) {
+        Logger.error('[deleteAnalysisResult] No result ID provided');
+        return;
+    }
+    
+    // Confirm deletion
+    if (!confirm('Are you sure you want to delete this analysis result?')) {
+        return;
+    }
+    
+    try {
+        Logger.log(`[deleteAnalysisResult] Deleting result ${resultId}`);
+        await apiDelete(`/api/analysis/result/${resultId}`);
+        
+        // Reload analyzed photos list
+        await loadAnalyzedPhotos();
+        
+        // Show success message
+        Notification.success('Analysis result deleted successfully');
+    } catch (error) {
+        Logger.error('[deleteAnalysisResult] Error:', error);
+        const userMessage = ErrorHandler.handleApiError(error, 'deleteAnalysisResult');
+        Notification.error(userMessage);
+    }
+}
+
 // Handle photo click (check if analyzed, if not analyze, then navigate to result page)
 // Show/hide loading overlay
 function showLoadingOverlay(message = 'Processing your image with AI...') {
@@ -481,16 +509,36 @@ function renderAnalyzedCarousel(items) {
                     <img src="${proxyUrl || imgUrl}" alt="Analyzed photo" 
                          onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'400\\' height=\\'400\\'%3E%3Crect fill=\\'%23ddd\\' width=\\'400\\' height=\\'400\\'/%3E%3Ctext x=\\'50%25\\' y=\\'50%25\\' text-anchor=\\'middle\\' dy=\\'.3em\\' fill=\\'%23999\\'%3EImage not available%3C/text%3E%3C/svg%3E';"
                          loading="lazy">
-        </div>
+                    <button class="photo-delete-btn" data-result-id="${resultId}" title="Delete analysis result">
+                        <i class="bi bi-x-circle"></i>
+                    </button>
+                </div>
                 <div class="carousel-card-footer">${era}</div>
-      </div>
-    `;
+            </div>
+        `;
     }).join('');
 
+    // Bind delete button events
+    const deleteButtons = inner.querySelectorAll('.photo-delete-btn');
+    deleteButtons.forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.stopPropagation(); // Prevent triggering card click event
+            const resultId = btn.getAttribute('data-result-id');
+            if (resultId) {
+                await deleteAnalysisResult(resultId);
+            }
+        });
+    });
+    
     // Bind click events
     const cards = inner.querySelectorAll('.carousel-card');
     cards.forEach(card => {
-        card.addEventListener('click', (e) => {
+        card.addEventListener('click', async (e) => {
+            // If delete button is clicked, don't process
+            if (e.target.closest('.photo-delete-btn')) {
+                return;
+            }
+            
             const resultId = card.getAttribute('data-result-id');
             if (resultId) {
                 window.location.href = `result.html?id=${resultId}`;
