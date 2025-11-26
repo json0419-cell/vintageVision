@@ -1,17 +1,17 @@
-// frontend/utils.js - 公共工具函数
+// frontend/utils.js - Common utility functions
 
 /**
- * 配置对象
+ * Configuration object
  */
 const CONFIG = {
     API_BASE: '',
-    DEBUG: true, // 开发环境设为 true，生产环境设为 false
+    DEBUG: true, // Set to true for development, false for production
     RETRY_ATTEMPTS: 3,
     RETRY_DELAY: 1000
 };
 
 /**
- * 日志工具 - 生产环境自动禁用
+ * Logger utility - Automatically disabled in production
  */
 const Logger = {
     log: (...args) => {
@@ -21,14 +21,14 @@ const Logger = {
         if (CONFIG.DEBUG) console.warn(...args);
     },
     error: (...args) => {
-        console.error(...args); // 错误始终记录
+        console.error(...args); // Errors are always logged
     }
 };
 
 /**
- * 统一的 API 请求函数
- * @param {string} url - API 端点
- * @param {Object} options - fetch 选项
+ * Unified API request function
+ * @param {string} url - API endpoint
+ * @param {Object} options - fetch options
  * @returns {Promise<Object>}
  */
 async function apiRequest(url, options = {}) {
@@ -45,13 +45,13 @@ async function apiRequest(url, options = {}) {
     try {
         const response = await fetch(url, mergedOptions);
         
-        // 202 Accepted 是正常的 PENDING 状态
+        // 202 Accepted is a normal PENDING status
         if (!response.ok && response.status !== 202) {
             const errorText = await response.text();
             throw new Error(`Request failed: ${response.status} ${response.statusText} - ${errorText}`);
         }
 
-        // 空响应处理
+        // Handle empty response
         const contentType = response.headers.get('content-type');
         if (contentType && contentType.includes('application/json')) {
             return await response.json();
@@ -65,14 +65,14 @@ async function apiRequest(url, options = {}) {
 }
 
 /**
- * GET 请求
+ * GET request
  */
 async function apiGet(url) {
     return apiRequest(url, { method: 'GET' });
 }
 
 /**
- * POST 请求
+ * POST request
  */
 async function apiPost(url, body) {
     return apiRequest(url, {
@@ -82,14 +82,14 @@ async function apiPost(url, body) {
 }
 
 /**
- * DELETE 请求
+ * DELETE request
  */
 async function apiDelete(url) {
     return apiRequest(url, { method: 'DELETE' });
 }
 
 /**
- * 带重试的请求
+ * Request with retry
  */
 async function apiRequestWithRetry(url, options = {}, retries = CONFIG.RETRY_ATTEMPTS) {
     for (let i = 0; i < retries; i++) {
@@ -104,11 +104,11 @@ async function apiRequestWithRetry(url, options = {}, retries = CONFIG.RETRY_ATT
 }
 
 /**
- * DOM 工具函数
+ * DOM utility functions
  */
 const DOM = {
     /**
-     * 安全获取元素
+     * Safely get element
      */
     getElement: (id) => {
         const el = document.getElementById(id);
@@ -119,14 +119,14 @@ const DOM = {
     },
 
     /**
-     * 批量获取元素
+     * Get multiple elements
      */
     getElements: (...ids) => {
         return ids.map(id => DOM.getElement(id));
     },
 
     /**
-     * 显示/隐藏元素
+     * Show/hide element
      */
     toggle: (element, show) => {
         if (element) {
@@ -135,7 +135,7 @@ const DOM = {
     },
 
     /**
-     * 设置多个元素的显示状态
+     * Set display state for multiple elements
      */
     toggleMultiple: (elements, show) => {
         elements.forEach(el => DOM.toggle(el, show));
@@ -143,11 +143,11 @@ const DOM = {
 };
 
 /**
- * 错误处理工具
+ * Error handling utilities
  */
 const ErrorHandler = {
     /**
-     * 显示用户友好的错误消息
+     * Show user-friendly error message
      */
     showError: (message, containerId = 'resultContainer') => {
         const container = DOM.getElement(containerId);
@@ -164,7 +164,7 @@ const ErrorHandler = {
     },
 
     /**
-     * 处理 API 错误
+     * Handle API errors
      */
     handleApiError: (error, context = '') => {
         Logger.error(`[ErrorHandler] ${context}:`, error);
@@ -187,11 +187,11 @@ const ErrorHandler = {
 };
 
 /**
- * 通知工具
+ * Notification utilities
  */
 const Notification = {
     /**
-     * 显示通知
+     * Show notification
      */
     show: (message, type = 'info', duration = 3000) => {
         const notification = document.createElement('div');
@@ -217,11 +217,11 @@ const Notification = {
 };
 
 /**
- * URL 工具
+ * URL utilities
  */
 const URLUtils = {
     /**
-     * 获取 URL 参数
+     * Get URL parameter
      */
     getParam: (name) => {
         const params = new URLSearchParams(window.location.search);
@@ -229,7 +229,7 @@ const URLUtils = {
     },
 
     /**
-     * 移除 URL 参数
+     * Remove URL parameter
      */
     removeParam: (name) => {
         const params = new URLSearchParams(window.location.search);
@@ -240,7 +240,7 @@ const URLUtils = {
 };
 
 /**
- * 防抖函数
+ * Debounce function
  */
 function debounce(func, wait) {
     let timeout;
@@ -255,7 +255,7 @@ function debounce(func, wait) {
 }
 
 /**
- * 节流函数
+ * Throttle function
  */
 function throttle(func, limit) {
     let inThrottle;
@@ -268,7 +268,7 @@ function throttle(func, limit) {
     };
 }
 
-// 导出
+// Export
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = {
         Logger,

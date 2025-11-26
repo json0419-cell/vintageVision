@@ -206,17 +206,17 @@ router.get('/google', (req, res) => {
 });
 
 // Google OAuth callback redirect endpoint
-// 重定向到 googleAuth.js 的路由进行处理
+// Redirect to googleAuth.js route for processing
 router.get('/google/callback', (req, res) => {
   const { code, error, state } = req.query;
   
-  // 构建查询参数
+  // Build query parameters
   const params = new URLSearchParams();
   if (code) params.append('code', code);
   if (error) params.append('error', error);
   if (state) params.append('state', state);
   
-  // 重定向到 googleAuth.js 的路由（挂载在 /auth 路径下）
+  // Redirect to googleAuth.js route (mounted at /auth path)
   res.redirect(`/auth/google/callback?${params.toString()}`);
 });
 

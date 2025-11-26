@@ -1,7 +1,7 @@
 // frontend/dashboard.js
-// 使用 utils.js 中的工具函数
+// Uses utility functions from utils.js
 
-// 全局函数：打开照片选择器
+// Global function: Open photo picker
 window.openPhotosPicker = function () {
     const btn = DOM.getElement('btnPickFromGoogle');
     if (btn) {
@@ -11,7 +11,7 @@ window.openPhotosPicker = function () {
     }
 };
 
-// 确认登录 + 填写 Welcome back, xxx
+// Verify login status and display welcome message
 async function ensureLoggedIn() {
     try {
         const user = await apiGet('/api/auth/me');
@@ -22,7 +22,7 @@ async function ensureLoggedIn() {
             nameSpan.textContent = user.name || 'User';
         }
 
-        // 加载当前已有的 pending 照片（从 Firestore）
+        // Load existing pending photos from Firestore
         await loadPendingPhotos();
         setupPickerButton();
     } catch (err) {
@@ -31,7 +31,7 @@ async function ensureLoggedIn() {
     }
 }
 
-// 从我们自己的数据库加载 pending 照片
+// Load pending photos from our database
 async function loadPendingPhotos() {
     try {
         Logger.log('[loadPendingPhotos] Loading pending photos...');
@@ -39,15 +39,15 @@ async function loadPendingPhotos() {
         const items = data.items || [];
         Logger.log(`[loadPendingPhotos] Loaded ${items.length} pending photos`);
         
-        // 映射数据格式
+        // Map data format
         const mappedItems = items.map(doc => ({
-            id: doc.id, // Firestore 文档 ID
+            id: doc.id, // Firestore document ID
             photoId: doc.photoId, // Google Photos ID
             baseUrl: doc.baseUrl,
             filename: doc.filename || doc.photoId || 'Photo',
         }));
         
-        // 渲染轮播（新照片已经在前面，因为后端按 createdAt desc 排序）
+        // Render carousel (new photos are already at the front, as backend sorts by createdAt desc)
         renderOriginalCarousel(mappedItems);
     } catch (err) {
         Logger.error('loadPendingPhotos error:', err);
@@ -55,7 +55,7 @@ async function loadPendingPhotos() {
     }
 }
 
-// 绑定 “Choose from Google Photos” 按钮事件
+// Bind "Choose from Google Photos" button event
 function setupPickerButton() {
     const btn = document.getElementById('btnPickFromGoogle');
     if (!btn) return;
@@ -65,7 +65,7 @@ function setupPickerButton() {
             btn.disabled = true;
             btn.textContent = 'Opening Google Photos...';
 
-            // 1. 后端创建 session，获取 pickerUri + sessionId
+            // 1. Backend creates session, returns pickerUri + sessionId
             const response = await apiPost('/api/photos/picker/start');
             Logger.log('[Picker] Response from /api/photos/picker/start:', response);
             
@@ -78,7 +78,7 @@ function setupPickerButton() {
             Logger.log('[Picker] Session ID:', sessionId);
             Logger.log('[Picker] Picker URI:', pickerUri);
 
-            // 2. 在新窗口打开 pickerUri（加 /autoclose，会自动关）
+            // 2. Open pickerUri in new window (add /autoclose, will auto-close)
             const pickerUrl = pickerUri.endsWith('/autoclose')
                 ? pickerUri
                 : pickerUri + '/autoclose';
@@ -90,10 +90,10 @@ function setupPickerButton() {
                 'width=1024,height=768'
             );
 
-            // 3. 轮询 session，直到用户选完
+            // 3. Poll session until user finishes selection
             await pollPickerSession(sessionId);
 
-            // 4. 轮询完成后，再从我们自己的 DB 把 pending 照片拉一遍
+            // 4. After polling completes, reload pending photos from our DB
             await loadPendingPhotos();
         } catch (err) {
             Logger.error('Picker flow error:', err);
@@ -105,7 +105,7 @@ function setupPickerButton() {
     });
 }
 
-// 轮询 Picker Session：请求 /api/photos/picker/items?sessionId=...
+// Poll Picker Session: Request /api/photos/picker/items?sessionId=...
 async function pollPickerSession(sessionId) {
     if (!sessionId) {
         Logger.error('[Picker] pollPickerSession called without sessionId');
@@ -113,7 +113,7 @@ async function pollPickerSession(sessionId) {
     }
     
     Logger.log('[Picker] Starting to poll session:', sessionId);
-    const maxAttempts = 40; // 40 * 3s = 120 秒
+    const maxAttempts = 40; // 40 * 3s = 120 seconds
     let attempt = 0;
 
     while (attempt < maxAttempts) {
@@ -136,11 +136,11 @@ async function pollPickerSession(sessionId) {
                 return;
             }
 
-            // 其他情况当作失败
+            // Other cases treated as failure
             Logger.warn('[Picker] unexpected response:', data);
             return;
         } catch (err) {
-            // 检查是否是 202 状态（PENDING）
+            // Check if status is 202 (PENDING)
             if (err.message && err.message.includes('202')) {
                 Logger.log(`[Picker] session ${sessionId} is still pending... (attempt ${attempt}/${maxAttempts})`);
                 continue;
@@ -154,14 +154,14 @@ async function pollPickerSession(sessionId) {
     Logger.warn(`[Picker] session ${sessionId} polling timeout`);
 }
 
-// 轮播状态
+// Carousel state
 let originalCarouselIndex = 0;
-const photosPerView = 3; // 同时显示3张图片
+const photosPerView = 3; // Display 3 images at once
 
-// 存储当前显示的照片 ID 集合（用于检测新照片）
+// Store current displayed photo ID set (for detecting new photos)
 let currentPhotoIds = new Set();
 
-// 把原始照片渲染到 carousel
+// Render original photos to carousel
 function renderOriginalCarousel(items) {
     const emptyDiv = document.getElementById('originalPhotosEmpty');
     const wrapper = document.getElementById('originalPhotosCarouselWrapper');
@@ -184,55 +184,55 @@ function renderOriginalCarousel(items) {
         return;
     }
 
-    // 检测新照片（不在当前显示列表中的）
+    // Detect new photos (not in current displayed list)
     const newPhotoIds = new Set(items.map(item => item.id).filter(id => id));
     const hasNewPhotos = Array.from(newPhotoIds).some(id => !currentPhotoIds.has(id));
     
-    // 如果有新照片，重置轮播索引到开头（显示新照片）
+    // If new photos detected, reset carousel index to start (show new photos)
     if (hasNewPhotos) {
         Logger.log('[renderOriginalCarousel] New photos detected, resetting carousel to start');
         originalCarouselIndex = 0;
     }
     
-    // 更新当前照片 ID 集合
+    // Update current photo ID set
     currentPhotoIds = newPhotoIds;
 
     Logger.log(`[renderOriginalCarousel] Rendering ${items.length} photos (new photos: ${hasNewPhotos})`);
     DOM.toggle(emptyDiv, false);
     DOM.toggle(wrapper, true);
 
-    // 渲染所有照片卡片
+    // Render all photo cards
     inner.innerHTML = items.map((item, idx) => {
-        // baseUrl 来自 Picker / 或我们 DB 里存的 baseUrl
-        // 可以加参数控制尺寸，例如 =w400-h400
+        // baseUrl comes from Picker or stored baseUrl in our DB
+        // Can add parameters to control size, e.g., =w400-h400
         let imgUrl = '';
         let proxyUrl = '';
         
-        // 检查 baseUrl 是否存在
+        // Check if baseUrl exists
         const baseUrl = item.baseUrl || item.imageUrl;
         
         if (baseUrl) {
-            // 构建原始 URL（带尺寸参数）
+            // Build original URL (with size parameters)
             if (baseUrl.includes('=')) {
                 imgUrl = baseUrl.replace(/=[^&]*/, '=w400-h400');
             } else {
                 imgUrl = `${baseUrl}=w400-h400`;
             }
             
-            // 使用后端代理来避免 CORS 和 403 问题
+            // Use backend proxy to avoid CORS and 403 issues
             proxyUrl = `/api/photos/proxy?url=${encodeURIComponent(imgUrl)}`;
         } else {
             Logger.warn(`[renderOriginalCarousel] No baseUrl for item ${idx}:`, item);
         }
         
         const filename = item.filename || item.photoId || 'Photo';
-        // 截断过长的文件名
+        // Truncate long filenames
         const displayName = filename.length > 20 ? filename.substring(0, 20) + '...' : filename;
 
-        // 使用 Firestore 文档 ID 作为 photoId（用于检查结果）
-        // 如果 item 有 id（Firestore doc id），使用它；否则使用 photoId 字段
+        // Use Firestore document ID as photoId (for checking results)
+        // If item has id (Firestore doc id), use it; otherwise use photoId field
         const photoId = item.id || item.photoId || '';
-        const firestoreDocId = item.id; // Firestore 文档 ID
+        const firestoreDocId = item.id; // Firestore document ID
         
         return `
             <div class="carousel-card" data-index="${idx}" data-photo-id="${photoId}" data-doc-id="${firestoreDocId}">
@@ -249,10 +249,10 @@ function renderOriginalCarousel(items) {
         `;
     }).join('');
 
-    // 更新轮播显示
+    // Update carousel display
     updateCarouselView(items.length);
     
-    // 绑定左右箭头事件
+    // Bind left/right arrow events
     if (leftBtn) {
         leftBtn.onclick = () => {
             if (originalCarouselIndex > 0) {
@@ -272,11 +272,11 @@ function renderOriginalCarousel(items) {
         };
     }
     
-    // 绑定删除按钮事件
+    // Bind delete button events
     const deleteButtons = inner.querySelectorAll('.photo-delete-btn');
     deleteButtons.forEach(btn => {
         btn.addEventListener('click', async (e) => {
-            e.stopPropagation(); // 防止触发卡片点击事件
+            e.stopPropagation(); // Prevent triggering card click event
             const photoId = btn.getAttribute('data-photo-id');
             if (photoId) {
                 await deletePhoto(photoId);
@@ -284,23 +284,23 @@ function renderOriginalCarousel(items) {
         });
     });
     
-    // 绑定图片卡片点击事件（分析照片）
+    // Bind photo card click events (analyze photo)
     const photoCards = inner.querySelectorAll('.carousel-card');
     photoCards.forEach((card, idx) => {
         card.addEventListener('click', async (e) => {
-            // 如果点击的是删除按钮，不处理
+            // If delete button is clicked, don't process
             if (e.target.closest('.photo-delete-btn')) {
                 return;
             }
             
-            // 使用索引找到对应的 item
+            // Use index to find corresponding item
             const photoData = items[idx];
             if (!photoData) return;
             
-            // photoData 结构：{ id: Firestore doc id, photoId: Google Photos ID, baseUrl, filename }
-            // 使用 Firestore doc id 作为 docId，photoId 作为 photoId
-            const docId = photoData.id; // Firestore userPhotos 文档 ID
-            const photoId = photoData.photoId || photoData.id; // Google Photos ID，如果没有则使用 docId
+            // photoData structure: { id: Firestore doc id, photoId: Google Photos ID, baseUrl, filename }
+            // Use Firestore doc id as docId, photoId as photoId
+            const docId = photoData.id; // Firestore userPhotos document ID
+            const photoId = photoData.photoId || photoData.id; // Google Photos ID, or use docId if not available
             
             Logger.log('[Photo click] Photo data:', { docId, photoId, photoData });
             
@@ -311,14 +311,14 @@ function renderOriginalCarousel(items) {
     });
 }
 
-// 删除照片
+// Delete photo
 async function deletePhoto(photoId) {
     if (!photoId) {
         Logger.error('[deletePhoto] No photo ID provided');
         return;
     }
     
-    // 确认删除
+    // Confirm deletion
     if (!confirm('Are you sure you want to delete this photo?')) {
         return;
     }
@@ -327,10 +327,10 @@ async function deletePhoto(photoId) {
         Logger.log(`[deletePhoto] Deleting photo ${photoId}`);
         await apiDelete(`/api/photos/${photoId}`);
         
-        // 重新加载照片列表
+        // Reload photo list
         await loadPendingPhotos();
         
-        // 显示成功消息
+        // Show success message
         Notification.success('Photo deleted successfully');
     } catch (error) {
         Logger.error('[deletePhoto] Error:', error);
@@ -339,8 +339,8 @@ async function deletePhoto(photoId) {
     }
 }
 
-// 处理照片点击（检查是否已分析，如果未分析则分析，然后跳转到结果页）
-// 显示/隐藏 loading 覆盖层
+// Handle photo click (check if analyzed, if not analyze, then navigate to result page)
+// Show/hide loading overlay
 function showLoadingOverlay(message = 'Processing your image with AI...') {
     const overlay = document.getElementById('analysisLoadingOverlay');
     const messageEl = document.getElementById('loadingMessage');
@@ -363,10 +363,10 @@ async function handlePhotoClick(photoId, docId, photoData) {
     try {
         Logger.log(`[handlePhotoClick] Photo clicked:`, { photoId, docId, photoData });
         
-        // 显示 loading 覆盖层
+        // Show loading overlay
         showLoadingOverlay('Checking analysis status...');
         
-        // 1. 检查是否已有分析结果
+        // 1. Check if analysis result already exists
         const checkUrl = docId 
             ? `/api/analysis/check?docId=${encodeURIComponent(docId)}${photoId ? `&photoId=${encodeURIComponent(photoId)}` : ''}`
             : `/api/analysis/check?photoId=${encodeURIComponent(photoId)}`;
@@ -375,14 +375,14 @@ async function handlePhotoClick(photoId, docId, photoData) {
         Logger.log('[handlePhotoClick] Check result:', checkData);
         
         if (checkData.exists) {
-            // 已有结果，直接跳转
+            // Result exists, navigate directly
             Logger.log(`[handlePhotoClick] Result exists: ${checkData.resultId}`);
             hideLoadingOverlay();
             window.location.href = `result.html?id=${checkData.resultId}`;
             return;
         }
         
-        // 2. 没有结果，开始分析
+        // 2. No result, start analysis
         showLoadingOverlay('Analyzing image with Vision API and Gemini... This may take a moment.');
         
         const imageUrl = photoData.baseUrl || photoData.imageUrl;
@@ -393,7 +393,7 @@ async function handlePhotoClick(photoId, docId, photoData) {
         
         Logger.log('[handlePhotoClick] Starting analysis with:', { photoId, docId, imageUrl });
         
-        // 使用 photoId（Google Photos ID）作为主要标识，如果没有则使用 docId
+        // Use photoId (Google Photos ID) as primary identifier, or use docId if not available
         const analysisPhotoId = photoId || docId;
         
         const analyzeData = await apiPost('/api/analysis/analyze', {
@@ -404,7 +404,7 @@ async function handlePhotoClick(photoId, docId, photoData) {
         
         Logger.log(`[handlePhotoClick] Analysis completed: ${analyzeData.resultId}`);
         
-        // 3. 跳转到结果页
+        // 3. Navigate to result page
         showLoadingOverlay('Analysis completed! Redirecting...');
         setTimeout(() => {
             hideLoadingOverlay();
@@ -419,10 +419,10 @@ async function handlePhotoClick(photoId, docId, photoData) {
     }
 }
 
-// 使用 utils.js 中的 Notification，保留 showNotification 作为别名以保持兼容性
+// Use Notification from utils.js, keep showNotification as alias for compatibility
 const showNotification = Notification.show;
 
-// 加载已分析的照片
+// Load analyzed photos
 async function loadAnalyzedPhotos() {
     try {
         const data = await apiGet('/api/analysis/results');
@@ -433,7 +433,7 @@ async function loadAnalyzedPhotos() {
     }
 }
 
-// 渲染已分析的照片轮播
+// Render analyzed photos carousel
 function renderAnalyzedCarousel(items) {
     const emptyDiv = document.getElementById('analyzedPhotosEmpty');
     const wrapper = document.getElementById('analyzedPhotosCarouselWrapper');
@@ -485,7 +485,7 @@ function renderAnalyzedCarousel(items) {
     `;
     }).join('');
 
-    // 绑定点击事件
+    // Bind click events
     const cards = inner.querySelectorAll('.carousel-card');
     cards.forEach(card => {
         card.addEventListener('click', (e) => {
@@ -496,10 +496,10 @@ function renderAnalyzedCarousel(items) {
         });
     });
     
-    // TODO: 添加左右箭头控制（类似 originalCarousel）
+    // TODO: Add left/right arrow controls (similar to originalCarousel)
 }
 
-// 更新轮播视图
+// Update carousel view
 function updateCarouselView(totalItems) {
     const inner = document.getElementById('originalCarouselInner');
     const leftBtn = document.getElementById('originalLeft');
@@ -507,11 +507,11 @@ function updateCarouselView(totalItems) {
     
     if (!inner) return;
     
-    // 计算最大索引
+    // Calculate max index
     const maxIndex = Math.max(0, totalItems - photosPerView);
     originalCarouselIndex = Math.min(originalCarouselIndex, maxIndex);
     
-    // 更新按钮状态
+    // Update button states
     if (leftBtn) {
         leftBtn.disabled = originalCarouselIndex === 0;
     }
@@ -519,8 +519,8 @@ function updateCarouselView(totalItems) {
         rightBtn.disabled = originalCarouselIndex >= maxIndex;
     }
     
-    // 计算滚动位置（每张卡片宽度 + gap）
-    const cardWidth = 170; // 与CSS中的 flex: 0 0 170px 一致
+    // Calculate scroll position (card width + gap)
+    const cardWidth = 170; // Matches CSS flex: 0 0 170px
     const gap = 12; // 0.75rem = 12px
     const scrollPosition = originalCarouselIndex * (cardWidth + gap);
     
@@ -528,7 +528,7 @@ function updateCarouselView(totalItems) {
     inner.style.transition = 'transform 0.3s ease';
 }
 
-// Logout：调用后端 /api/auth/logout，清 cookie，然后回首页
+// Logout: Call backend /api/auth/logout, clear cookies, then return to home page
 async function logout() {
     try {
         await apiPost('/api/auth/logout');
@@ -542,17 +542,17 @@ async function logout() {
 document.addEventListener('DOMContentLoaded', async () => {
     await ensureLoggedIn();
     
-    // 初始化轮播索引
+    // Initialize carousel index
     originalCarouselIndex = 0;
     
-    // 加载已分析的照片
+    // Load analyzed photos
     await loadAnalyzedPhotos();
     
-    // 检查 URL 参数，如果需要自动打开 picker
+    // Check URL parameter, auto-open picker if needed
     if (URLUtils.getParam('openPicker') === 'true') {
         URLUtils.removeParam('openPicker');
         
-        // 等待一下确保页面完全加载，然后自动打开 picker
+        // Wait a bit to ensure page is fully loaded, then auto-open picker
         setTimeout(() => {
             if (typeof window.openPhotosPicker === 'function') {
                 Logger.log('[dashboard] Auto-opening photo picker from URL parameter');

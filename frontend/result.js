@@ -1,7 +1,7 @@
 // frontend/result.js
-// 使用 utils.js 中的工具函数
+// Uses utility functions from utils.js
 
-// 从 URL 获取 resultId
+// Get resultId from URL
 const resultId = URLUtils.getParam('id');
 
 if (!resultId) {
@@ -23,13 +23,13 @@ async function loadResult(resultId) {
 
 function renderResult(result) {
     const geminiResult = result.geminiResult || {};
-    // 优先使用 baseUrl，然后是 imageUrl
+    // Prefer baseUrl, then imageUrl
     const imageUrl = result.baseUrl || result.imageUrl || '';
     
     Logger.log('[renderResult] Image URL:', imageUrl);
     Logger.log('[renderResult] Full result:', result);
 
-    // 构建图片代理 URL
+    // Build image proxy URL
     let displayImageUrl = '';
     if (imageUrl) {
         let imgUrl = imageUrl;
@@ -103,13 +103,13 @@ function renderResult(result) {
         </div>
     `;
     
-    // 绑定 chip 点击事件（使用事件委托）
+    // Bind chip click events (using event delegation)
     setupChipClickHandlers(container);
 }
 
-// 设置 chip 点击事件处理器
+// Setup chip click event handlers
 function setupChipClickHandlers(container) {
-    // 使用事件委托，监听所有 .chip 元素的点击
+    // Use event delegation to listen for clicks on all .chip elements
     container.addEventListener('click', (e) => {
         const chip = e.target.closest('.chip');
         if (chip && chip.hasAttribute('data-search')) {
@@ -117,7 +117,7 @@ function setupChipClickHandlers(container) {
             e.stopPropagation();
             const searchQuery = chip.getAttribute('data-search');
             if (searchQuery) {
-                // 只在新标签页打开，不在当前页面跳转
+                // Only open in new tab, don't navigate current page
                 openGoogle(searchQuery);
             }
         }
@@ -153,45 +153,45 @@ function renderTips(tips) {
 function splitTip(s) {
     const raw = String(s || '').trim();
     
-    // 模式1: *Title:* Body (最常见，如 "*Silhouettes:* Look for...")
+    // Pattern 1: *Title:* Body (most common, e.g., "*Silhouettes:* Look for...")
     let m = /^\s*\*\s*([^*:]+?)\s*\*?\s*[:：]\s*(.+)$/.exec(raw);
     if (m) {
         const title = m[1].trim();
-        // 去掉 body 开头的 * 号
+        // Remove leading * from body
         let body = m[2].trim().replace(/^\*\s*/, '');
         return { title, body };
     }
     
-    // 模式2: **Title:** Body
+    // Pattern 2: **Title:** Body
     m = /^\s*\*\*\s*([^*]+?)\s*\*\*\s*[:：\-–—]\s*(.+)$/.exec(raw);
     if (m) {
         const title = m[1].trim();
-        // 去掉 body 开头的 * 号
+        // Remove leading * from body
         let body = m[2].trim().replace(/^\*\s*/, '');
         return { title, body };
     }
     
-    // 模式3: Title: Body (没有星号)
+    // Pattern 3: Title: Body (no asterisks)
     m = /^\s*([A-Za-z][A-Za-z\s&]+?)\s*[:：]\s*(.+)$/.exec(raw);
     if (m) {
         const title = m[1].trim();
-        // 去掉 body 开头的 * 号
+        // Remove leading * from body
         let body = m[2].trim().replace(/^\*\s*/, '');
-        // 检查是否是已知的标签
+        // Check if it's a known tag
         const normalizedTitle = normalizeTitle(title);
         return { title: normalizedTitle, body };
     }
     
-    // 模式4: **Title** Body (没有冒号)
+    // Pattern 4: **Title** Body (no colon)
     m = /^\s*\*\*\s*([^*]+?)\s*\*\*\s*(.+)$/.exec(raw);
     if (m) {
         const title = m[1].trim();
-        // 去掉 body 开头的 * 号
+        // Remove leading * from body
         let body = m[2].trim().replace(/^\*\s*/, '');
         return { title, body };
     }
     
-    // 模式5: 关键词匹配（作为后备）
+    // Pattern 5: Keyword matching (as fallback)
     const lower = raw.toLowerCase();
     const titleMap = [
         ['silhouettes', 'Silhouettes'], ['silhouette', 'Silhouettes'],
@@ -203,19 +203,19 @@ function splitTip(s) {
     
     for (const [needle, title] of titleMap) {
         if (lower.includes(needle)) {
-            // 尝试提取 body（移除标题部分和开头的 * 号）
+            // Try to extract body (remove title part and leading *)
             let body = raw.replace(/\*\*/g, '').replace(new RegExp(needle, 'gi'), '').replace(/^[:：\-–—\s]+/, '').trim();
-            body = body.replace(/^\*\s*/, ''); // 去掉开头的 * 号
+            body = body.replace(/^\*\s*/, ''); // Remove leading *
             return { title, body: body || raw.replace(/\*\*/g, '').replace(/^\*\s*/, '') };
         }
     }
     
-    // 默认：使用整个文本作为 body，去掉开头的 * 号
+    // Default: Use entire text as body, remove leading *
     let body = raw.replace(/\*\*/g, '').replace(/^\*\s*/, '');
     return { title: 'Tip', body };
 }
 
-// 标准化标题（确保首字母大写，其他小写）
+// Normalize title (ensure first letter uppercase, rest lowercase)
 function normalizeTitle(title) {
     if (!title) return 'Tip';
     
@@ -241,32 +241,32 @@ function normalizeTitle(title) {
         return titleMap[lower];
     }
     
-    // 如果不在映射中，保持原样但确保首字母大写
+    // If not in map, keep as is but ensure first letter is uppercase
     return title.charAt(0).toUpperCase() + title.slice(1).toLowerCase();
 }
 
 function iconFor(title) {
     const t = (title || '').toLowerCase();
-    const green = '#22c55e'; // 统一的绿色
+    const green = '#22c55e'; // Unified green color
     
     if (t.includes('silhouette')) {
-        // 人物轮廓图标
+        // Person silhouette icon
         return `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="${green}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-3-3.87M8 21v-2a4 4 0 0 1 3-3.87M15 7a3 3 0 1 1-6 0 3 3 0 0 1 6 0z"/></svg>`;
     }
     if (t.includes('fabric') || t.includes('material')) {
-        // 堆叠的布料图标（波浪线，类似图片中的样式）
+        // Stacked fabric icon (wavy lines, similar to image style)
         return `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="${green}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6c2 0 2 2 4 2s2-2 4-2 2 2 4 2 2-2 4-2"/><path d="M3 12c2 0 2 2 4 2s2-2 4-2 2 2 4 2 2-2 4-2"/><path d="M3 18c2 0 2 2 4 2s2-2 4-2 2 2 4 2 2-2 4-2"/></svg>`;
     }
     if (t.includes('detail')) {
-        // 星形图标
+        // Star icon
         return `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="${green}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>`;
     }
     if (t.includes('price')) {
-        // 价格/范围图标（方形箭头）
+        // Price/range icon (square arrow)
         return `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="${green}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" fill="none"/><path d="M9 9h6M9 15h6M12 3v18"/></svg>`;
     }
     if (t.includes('platform')) {
-        // 地球图标
+        // Globe icon
         return `<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="${green}" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>`;
     }
     
@@ -279,8 +279,8 @@ function truncateText(text, maxLength) {
     return text.substring(0, maxLength).trim() + '...';
 }
 
-// 在新标签页打开 Google 搜索（不在当前页面跳转）
-// 确保函数在全局作用域可用
+// Open Google search in new tab (don't navigate current page)
+// Ensure function is available in global scope
 function openGoogle(q) {
     if (!q) {
         Logger.warn('[openGoogle] No search query provided');
@@ -292,17 +292,17 @@ function openGoogle(q) {
         const searchUrl = 'https://www.google.com/search?q=' + encodeURIComponent(searchQuery);
         Logger.log('[openGoogle] Opening Google search for:', searchQuery);
         
-        // 只在新标签页打开，不在当前页面跳转
+        // Only open in new tab, don't navigate current page
         window.open(searchUrl, '_blank', 'noopener,noreferrer');
         
-        // 注意：如果弹窗被阻止，我们不会在当前页面跳转
-        // 用户需要允许弹窗才能使用此功能
+        // Note: If popup is blocked, we won't navigate current page
+        // User needs to allow popups to use this feature
     } catch (error) {
         Logger.error('[openGoogle] Error opening Google search:', error);
         Notification.error('Failed to open Google search. Please check if popups are blocked.');
     }
 }
 
-// 确保函数在全局作用域可用
+// Ensure function is available in global scope
 window.openGoogle = openGoogle;
 

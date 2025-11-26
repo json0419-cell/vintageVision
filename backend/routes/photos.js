@@ -7,7 +7,7 @@ const { firestore } = require('../utils/firestore');
 
 const router = express.Router();
 
-// 刷新 access token 的函数
+// Function to refresh access token
 async function refreshAccessToken(refreshToken) {
     const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
     const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
@@ -40,7 +40,7 @@ async function refreshAccessToken(refreshToken) {
     }
 }
 
-// 小工具函数：从 cookie 里拿 access_token，如果过期则刷新
+// Utility function: Get access_token from cookie, refresh if expired
 async function getAccessTokenFromCookies(req, res) {
     let token = req.cookies.google_access_token;
     const refreshToken = req.cookies.google_refresh_token;
@@ -51,14 +51,14 @@ async function getAccessTokenFromCookies(req, res) {
         throw err;
     }
     
-    // 尝试使用 token，如果失败则刷新
-    // 注意：这里我们无法直接验证 token 是否过期，所以先尝试使用
-    // 如果 API 调用返回 401，我们再刷新
+    // Try using token, refresh if it fails
+    // Note: We cannot directly verify if token is expired, so try using it first
+    // If API call returns 401, we refresh
     
     return { token, refreshToken };
 }
 
-// 小工具函数：从 cookie 拿 user id
+// Utility function: Get user id from cookie
 function getUserIdFromCookies(req) {
     const userId = req.cookies.google_user_id;
     if (!userId) {
@@ -70,9 +70,9 @@ function getUserIdFromCookies(req) {
 }
 
 /**
- * 创建一个 Picker Session
+ * Create a Picker Session
  * POST /api/photos/picker/start
- * 返回：{ sessionId, pickerUri }
+ * Returns: { sessionId, pickerUri }
  */
 router.post('/photos/picker/start', async (req, res) => {
     try {
@@ -81,13 +81,13 @@ router.post('/photos/picker/start', async (req, res) => {
 
         logger.info(`[/api/photos/picker/start] user ${userId} creating picker session`);
 
-        // 按官方文档：POST https://photospicker.googleapis.com/v1/sessions
-        // 请求体可以先用一个最小配置（不带额外字段）
+        // Per official docs: POST https://photospicker.googleapis.com/v1/sessions
+        // Request body can start with minimal config (no extra fields)
         let resp;
         try {
             resp = await axios.post(
                 'https://photospicker.googleapis.com/v1/sessions',
-                {}, // 最小 body，后面需要可以再扩展
+                {}, // Minimal body, can be extended later if needed
                 {
                     headers: {
                         Authorization: `Bearer ${accessToken}`,
@@ -96,12 +96,12 @@ router.post('/photos/picker/start', async (req, res) => {
                 }
             );
         } catch (apiError) {
-            // 如果返回 401，尝试刷新 token
+            // If returns 401, try refreshing token
             if (apiError.response?.status === 401 && refreshToken) {
                 logger.info('[/api/photos/picker/start] Token expired, refreshing...');
                 const newToken = await refreshAccessToken(refreshToken);
                 
-                // 更新 cookie
+                // Update cookie
                 const cookieOptions = {
                     httpOnly: true,
                     secure: process.env.NODE_ENV === 'production',
@@ -111,7 +111,7 @@ router.post('/photos/picker/start', async (req, res) => {
                 };
                 res.cookie('google_access_token', newToken, cookieOptions);
                 
-                // 重试请求
+                // Retry request
                 resp = await axios.post(
                     'https://photospicker.googleapis.com/v1/sessions',
                     {},
@@ -123,7 +123,7 @@ router.post('/photos/picker/start', async (req, res) => {
                     }
                 );
             } else {
-                // 如果没有 refresh_token 或刷新失败，返回明确的错误
+                // If no refresh_token or refresh fails, return clear error
                 logger.error('[/api/photos/picker/start] Authentication failed:', {
                     status: apiError.response?.status,
                     message: apiError.response?.data?.error?.message,
@@ -135,7 +135,7 @@ router.post('/photos/picker/start', async (req, res) => {
 
         logger.info('[/api/photos/picker/start] Google API response:', JSON.stringify(resp.data, null, 2));
         
-        // Google Photos Picker API 返回的字段是 'id' 而不是 'sessionId'
+        // Google Photos Picker API returns field 'id' not 'sessionId'
         const sessionId = resp.data?.id || resp.data?.sessionId || resp.data?.session_id;
         const pickerUri = resp.data?.pickerUri || resp.data?.picker_uri || resp.data?.picker_url;
 
@@ -155,8 +155,8 @@ router.post('/photos/picker/start', async (req, res) => {
         logger.info(`[/api/photos/picker/start] session created: ${sessionId}, pickerUri: ${pickerUri}`);
 
         res.json({
-            sessionId, // 使用 'id' 字段作为 sessionId
-            pickerUri, // 前端用这个 URL 在新窗口里打开 Google Photos Picker
+            sessionId, // Use 'id' field as sessionId
+            pickerUri, // Frontend uses this URL to open Google Photos Picker in new window
         });
     } catch (err) {
         logger.error('[/api/photos/picker/start] error:', {
@@ -173,12 +173,12 @@ router.post('/photos/picker/start', async (req, res) => {
 });
 
 /**
- * 轮询一个 session，获取用户选的 mediaItems
+ * Poll a session to get user-selected mediaItems
  * GET /api/photos/picker/items?sessionId=xxx
  *
- * 返回：
- *  - { status: 'PENDING' } → 用户还在选/没选完
- *  - { status: 'DONE', items: [...] } → 选完了，items 是简化后的图片信息
+ * Returns:
+ *  - { status: 'PENDING' } → User still selecting/not finished
+ *  - { status: 'DONE', items: [...] } → Selection complete, items are simplified image info
  */
 router.get('/photos/picker/items', async (req, res) => {
     const { sessionId } = req.query;
@@ -193,7 +193,7 @@ router.get('/photos/picker/items', async (req, res) => {
 
         logger.info(`[/api/photos/picker/items] user ${userId} polling session ${sessionId}`);
 
-        // 按文档：GET https://photospicker.googleapis.com/v1/mediaItems?sessionId=...
+        // Per docs: GET https://photospicker.googleapis.com/v1/mediaItems?sessionId=...
         let resp;
         try {
             resp = await axios.get('https://photospicker.googleapis.com/v1/mediaItems', {
@@ -202,16 +202,16 @@ router.get('/photos/picker/items', async (req, res) => {
                 },
                 params: {
                     sessionId,
-                    pageSize: 100, // 最多一次 100 张
+                    pageSize: 100, // Max 100 at a time
                 },
             });
         } catch (apiError) {
-            // 如果返回 401，尝试刷新 token
+            // If returns 401, try refreshing token
             if (apiError.response?.status === 401 && refreshToken) {
                 logger.info('[/api/photos/picker/items] Token expired, refreshing...');
                 const newToken = await refreshAccessToken(refreshToken);
                 
-                // 更新 cookie
+                // Update cookie
                 const cookieOptions = {
                     httpOnly: true,
                     secure: process.env.NODE_ENV === 'production',
@@ -221,7 +221,7 @@ router.get('/photos/picker/items', async (req, res) => {
                 };
                 res.cookie('google_access_token', newToken, cookieOptions);
                 
-                // 重试请求
+                // Retry request
                 resp = await axios.get('https://photospicker.googleapis.com/v1/mediaItems', {
                     headers: {
                         Authorization: `Bearer ${newToken}`,
@@ -232,7 +232,7 @@ router.get('/photos/picker/items', async (req, res) => {
                     },
                 });
             } else {
-                // 如果没有 refresh_token 或刷新失败，返回明确的错误
+                // If no refresh_token or refresh fails, return clear error
                 logger.error('[/api/photos/picker/items] Authentication failed:', {
                     status: apiError.response?.status,
                     message: apiError.response?.data?.error?.message,
@@ -246,14 +246,14 @@ router.get('/photos/picker/items', async (req, res) => {
         
         logger.info(`[/api/photos/picker/items] Received ${mediaItems.length} media items from Google`);
 
-        // 把我们关心的信息抽出来
+        // Extract information we care about
         const simplified = mediaItems.map(item => {
-            // Picker API 返回的是 PickedMediaItem
-            // 文档：item.mediaFile.baseUrl / mimeType / filename / metadata...
+            // Picker API returns PickedMediaItem
+            // Docs: item.mediaFile.baseUrl / mimeType / filename / metadata...
             const mf = item.mediaFile || {};
             const meta = mf.mediaMetadata || {};
             
-            // 检查数据结构
+            // Check data structure
             logger.info('[/api/photos/picker/items] Media item structure:', {
                 hasMediaFile: !!mf,
                 hasBaseUrl: !!mf.baseUrl,
@@ -263,7 +263,7 @@ router.get('/photos/picker/items', async (req, res) => {
 
             return {
                 id: item.id || mf.id || null,
-                baseUrl: mf.baseUrl,         // 用这个加参数 =w800-h800 之类就可以展示
+                baseUrl: mf.baseUrl,         // Use this with params like =w800-h800 to display
                 mimeType: mf.mimeType,
                 filename: mf.filename,
                 type: item.type,            // PHOTO / VIDEO
@@ -273,19 +273,19 @@ router.get('/photos/picker/items', async (req, res) => {
             };
         });
 
-        // 把这些图片保存到 Firestore，方便以后 dashboard 用
-        // 建一个集合 userPhotos，文档 id 随机，让 Firestore 生成
+        // Save these images to Firestore for dashboard use later
+        // Create a collection userPhotos, document id random, let Firestore generate
         if (simplified.length > 0) {
             try {
                 logger.info(`[/api/photos/picker/items] Attempting to save ${simplified.length} photos to Firestore`);
                 
-                // 先检查哪些照片已经存在（通过 photoId 和 userId）
+                // First check which photos already exist (by photoId and userId)
                 const photosCol = firestore.collection('userPhotos');
-                const photoIds = simplified.map(p => p.id).filter(id => id); // 只查询有 photoId 的
+                const photoIds = simplified.map(p => p.id).filter(id => id); // Only query those with photoId
                 
                 let existingPhotoIds = new Set();
                 if (photoIds.length > 0) {
-                    // Firestore 的 'in' 查询最多支持 10 个值，如果超过需要分批查询
+                    // Firestore 'in' query supports max 10 values, if more need batch queries
                     const batchSize = 10;
                     for (let i = 0; i < photoIds.length; i += batchSize) {
                         const batch = photoIds.slice(i, i + batchSize);
@@ -305,10 +305,10 @@ router.get('/photos/picker/items', async (req, res) => {
                 
                 logger.info(`[/api/photos/picker/items] Found ${existingPhotoIds.size} existing photos out of ${simplified.length}`);
                 
-                // 过滤出需要保存的照片（不存在的）
+                // Filter out photos that need to be saved (non-existent)
                 const photosToSave = simplified.filter(photo => {
                     if (!photo.id) {
-                        // 如果没有 photoId，也保存（可能是新照片）
+                        // If no photoId, also save (may be new photo)
                         return true;
                     }
                     const exists = existingPhotoIds.has(photo.id);
@@ -326,20 +326,20 @@ router.get('/photos/picker/items', async (req, res) => {
                     photosToSave.forEach((photo, index) => {
                         const docRef = photosCol.doc();
                         
-                        // 构建 photoData，过滤掉 undefined 值（Firestore 不允许 undefined）
+                        // Build photoData, filter out undefined values (Firestore doesn't allow undefined)
                         const photoData = {
                             userId,
                             sessionId,
                             source: 'google_photos_picker',
                             createdAt: new Date(),
-                            status: 'pending',           // 还没分析
-                            // 真正重要的信息：
+                            status: 'pending',           // Not analyzed yet
+                            // Truly important information:
                             photoId: photo.id,
                             baseUrl: photo.baseUrl,
                             filename: photo.filename || `photo_${index + 1}`,
                         };
                         
-                        // 只添加非 undefined 的字段
+                        // Only add non-undefined fields
                         if (photo.mimeType !== undefined) photoData.mimeType = photo.mimeType;
                         if (photo.width !== undefined) photoData.width = photo.width;
                         if (photo.height !== undefined) photoData.height = photo.height;
@@ -363,7 +363,7 @@ router.get('/photos/picker/items', async (req, res) => {
                     );
                 }
             } catch (firestoreError) {
-                // Firestore 错误不应该阻止返回结果，但需要记录
+                // Firestore errors should not prevent returning results, but need to log
                 logger.error('[/api/photos/picker/items] Firestore save error:', {
                     error: firestoreError.message,
                     stack: firestoreError.stack,
@@ -371,7 +371,7 @@ router.get('/photos/picker/items', async (req, res) => {
                     sessionId,
                     photoCount: simplified.length
                 });
-                // 继续执行，返回数据给前端
+                // Continue execution, return data to frontend
             }
         } else {
             logger.warn(`[/api/photos/picker/items] No photos to save for user ${userId}, session ${sessionId}`);
@@ -386,10 +386,10 @@ router.get('/photos/picker/items', async (req, res) => {
         const errorData = err.response?.data?.error || err.response?.data;
         const errorMessage = errorData?.message || err.message;
 
-        // 如果 session 还没完成，会返回 FAILED_PRECONDITION 或特定的错误消息
+        // If session not completed yet, will return FAILED_PRECONDITION or specific error message
         const apiErrorStatus = errorData?.status;
         
-        // 检查是否是 "用户还没有选择照片" 的情况
+        // Check if it's the "user hasn't selected photos yet" case
         if (status === 400) {
             if (apiErrorStatus === 'FAILED_PRECONDITION' || 
                 errorMessage?.includes('not picked media items') ||
@@ -399,7 +399,7 @@ router.get('/photos/picker/items', async (req, res) => {
             }
         }
         
-        // 如果是 404，可能是 session 不存在或已过期
+        // If 404, session may not exist or expired
         if (status === 404) {
             logger.warn(`[/api/photos/picker/items] session ${sessionId} not found or expired`);
             return res.status(404).json({ 
@@ -423,7 +423,7 @@ router.get('/photos/picker/items', async (req, res) => {
 });
 
 /**
- * 代理 Google Photos 图片（解决 CORS 和 403 问题）
+ * Proxy Google Photos images (solves CORS and 403 issues)
  * GET /api/photos/proxy?url=...
  */
 router.get('/photos/proxy', async (req, res) => {
@@ -441,23 +441,23 @@ router.get('/photos/proxy', async (req, res) => {
             return res.status(401).json({ error: 'No access token available' });
         }
         
-        // 解码 URL
+        // Decode URL
         const imageUrl = decodeURIComponent(url);
         logger.info(`[/api/photos/proxy] Proxying image URL: ${imageUrl.substring(0, 100)}...`);
         
-        // 使用 access token 获取图片
+        // Use access token to get image
         const imageResponse = await axios.get(imageUrl, {
             headers: {
                 Authorization: `Bearer ${accessToken}`,
             },
             responseType: 'arraybuffer',
         }).catch(async (error) => {
-            // 如果 token 过期，尝试刷新
+            // If token expired, try refreshing
             if (error.response?.status === 401 && refreshToken) {
                 logger.info('[/api/photos/proxy] Token expired, refreshing...');
                 const newToken = await refreshAccessToken(refreshToken);
                 
-                // 更新 cookie
+                // Update cookie
                 const cookieOptions = {
                     httpOnly: true,
                     secure: process.env.NODE_ENV === 'production',
@@ -467,7 +467,7 @@ router.get('/photos/proxy', async (req, res) => {
                 };
                 res.cookie('google_access_token', newToken, cookieOptions);
                 
-                // 重试
+                // Retry
                 return await axios.get(imageUrl, {
                     headers: {
                         Authorization: `Bearer ${newToken}`,
@@ -478,10 +478,10 @@ router.get('/photos/proxy', async (req, res) => {
             throw error;
         });
 
-        // 设置正确的 Content-Type
+        // Set correct Content-Type
         const contentType = imageResponse.headers['content-type'] || 'image/jpeg';
         res.set('Content-Type', contentType);
-        res.set('Cache-Control', 'public, max-age=3600'); // 缓存1小时
+        res.set('Cache-Control', 'public, max-age=3600'); // Cache 1 hour
         
         res.send(Buffer.from(imageResponse.data));
     } catch (err) {
@@ -491,7 +491,7 @@ router.get('/photos/proxy', async (req, res) => {
             url: url?.substring(0, 100)
         });
         
-        // 如果是 401 或 403，返回更明确的错误
+        // If 401 or 403, return clearer error
         if (err.response?.status === 401 || err.response?.status === 403) {
             return res.status(err.response.status).json({
                 error: 'Failed to access image',
@@ -507,8 +507,8 @@ router.get('/photos/proxy', async (req, res) => {
 });
 
 /**
- *（可选）获取当前用户已经保存的原始照片列表（比如 status = pending）
- * 排除已经分析过的照片
+ * (Optional) Get current user's saved original photo list (e.g., status = pending)
+ * Exclude already analyzed photos
  * GET /api/photos/pending
  */
 router.get('/photos/pending', async (req, res) => {
@@ -517,8 +517,8 @@ router.get('/photos/pending', async (req, res) => {
         
         logger.info(`[/api/photos/pending] Loading pending photos for user ${userId}`);
 
-        // 注意：Firestore 复合查询需要索引，如果 orderBy 和 where 一起用
-        // 如果查询失败，先尝试不带 orderBy
+        // Note: Firestore compound queries require index, if orderBy and where used together
+        // If query fails, try without orderBy first
         let snap;
         try {
             snap = await firestore.collection('userPhotos')
@@ -528,7 +528,7 @@ router.get('/photos/pending', async (req, res) => {
                 .limit(50)
                 .get();
         } catch (indexError) {
-            // 如果没有索引，尝试不带 orderBy
+            // If no index, try without orderBy
             logger.warn('[/api/photos/pending] Index error, trying without orderBy:', indexError.message);
             snap = await firestore.collection('userPhotos')
                 .where('userId', '==', userId)
@@ -553,11 +553,11 @@ router.get('/photos/pending', async (req, res) => {
             };
         });
 
-        // 获取已分析的照片 ID 列表（从 results collection 或 userPhotos 的 analysisResult）
+        // Get list of analyzed photo IDs (from results collection or userPhotos' analysisResult)
         const analyzedPhotoIds = new Set();
         
         try {
-            // 方法1: 从 results collection 查询
+            // Method 1: Query from results collection
             try {
                 const resultsSnap = await firestore.collection('results')
                     .where('userId', '==', userId)
@@ -577,7 +577,7 @@ router.get('/photos/pending', async (req, res) => {
                 logger.warn('[/api/photos/pending] Failed to query results collection:', resultsError.message);
             }
             
-            // 方法2: 从 userPhotos 中查找有 analysisResult 的文档
+            // Method 2: Find documents with analysisResult from userPhotos
             try {
                 const analyzedPhotosSnap = await firestore.collection('userPhotos')
                     .where('userId', '==', userId)
@@ -599,9 +599,9 @@ router.get('/photos/pending', async (req, res) => {
             logger.warn('[/api/photos/pending] Error checking analyzed photos, continuing anyway:', error.message);
         }
 
-        // 过滤掉已分析的照片
+        // Filter out analyzed photos
         const items = allItems.filter(item => {
-            // 如果照片的 ID 或 photoId 在已分析列表中，则排除
+            // If photo's ID or photoId is in analyzed list, exclude it
             const isAnalyzed = analyzedPhotoIds.has(item.id) || 
                               (item.photoId && analyzedPhotoIds.has(item.photoId));
             return !isAnalyzed;
@@ -619,7 +619,7 @@ router.get('/photos/pending', async (req, res) => {
 });
 
 /**
- * 删除照片
+ * Delete photo
  * DELETE /api/photos/:photoId
  */
 router.delete('/photos/:photoId', async (req, res) => {
@@ -633,7 +633,7 @@ router.delete('/photos/:photoId', async (req, res) => {
 
         logger.info(`[/api/photos/${photoId}] User ${userId} attempting to delete photo`);
 
-        // 获取照片文档
+        // Get photo document
         const photoDoc = await firestore.collection('userPhotos').doc(photoId).get();
         
         if (!photoDoc.exists) {
@@ -642,13 +642,13 @@ router.delete('/photos/:photoId', async (req, res) => {
 
         const photoData = photoDoc.data();
         
-        // 验证照片属于当前用户
+        // Verify photo belongs to current user
         if (photoData.userId !== userId) {
             logger.warn(`[/api/photos/${photoId}] User ${userId} attempted to delete photo belonging to ${photoData.userId}`);
             return res.status(403).json({ error: 'You do not have permission to delete this photo' });
         }
 
-        // 删除照片文档
+        // Delete photo document
         await firestore.collection('userPhotos').doc(photoId).delete();
 
         logger.info(`[/api/photos/${photoId}] Successfully deleted photo for user ${userId}`);

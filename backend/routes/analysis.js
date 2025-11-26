@@ -7,12 +7,12 @@ const logger = require('../utils/logger');
 const { firestore } = require('../utils/firestore');
 
 const router = express.Router();
-// 使用与 photos.js 相同的 firestore 实例（可能配置了不同的数据库）
+// Use the same firestore instance as photos.js (may be configured for different database)
 const db = firestore;
 const visionClient = new vision.ImageAnnotatorClient();
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// 从 photos.js 导入获取 access token 的函数
+// Import function to get access token from photos.js
 async function getAccessTokenFromCookies(req, res) {
     const accessToken = req.cookies?.google_access_token;
     const refreshToken = req.cookies?.google_refresh_token;
@@ -26,7 +26,7 @@ async function getAccessTokenFromCookies(req, res) {
     return { token: accessToken, refreshToken };
 }
 
-// ========= 简单的 cookie 鉴权：从 google_user_id 里拿用户 =========
+// ========= Simple cookie authentication: Get user from google_user_id =========
 function requireGoogleUser(req, res, next) {
     const googleUserId = req.cookies?.google_user_id;
     if (!googleUserId) {
@@ -37,10 +37,10 @@ function requireGoogleUser(req, res, next) {
 }
 
 /**
- * 检查照片是否已经有分析结果
+ * Check if photo already has analysis result
  * GET /api/analysis/check?photoId=xxx&docId=xxx
- * photoId: Google Photos 的 ID（可选）
- * docId: Firestore userPhotos 文档 ID（可选）
+ * photoId: Google Photos ID (optional)
+ * docId: Firestore userPhotos document ID (optional)
  */
 router.get('/check', requireGoogleUser, async (req, res) => {
     try {
@@ -55,21 +55,21 @@ router.get('/check', requireGoogleUser, async (req, res) => {
 
         let snap;
 
-        // 在 Datastore Mode 下，避免查询 userPhotos collection
-        // 直接使用 docId 或 photoId 来查询 results collection
-        // results collection 中的 photoId 可能是 Google Photos ID 或 Firestore doc ID
+        // In Datastore Mode, avoid querying userPhotos collection
+        // Directly use docId or photoId to query results collection
+        // photoId in results collection may be Google Photos ID or Firestore doc ID
 
-        // 构建查询列表：优先使用 docId，然后是 photoId
+        // Build query list: Prefer docId, then photoId
         const queryIds = [];
         if (docId) queryIds.push(docId);
         if (photoId && photoId !== docId) queryIds.push(photoId);
 
-        // 在 Datastore Mode 下，复合查询可能不支持
-        // 先尝试标准查询，如果失败则使用内存过滤或检查 userPhotos
+        // In Datastore Mode, compound queries may not be supported
+        // Try standard query first, if fails use in-memory filtering or check userPhotos
         let querySucceeded = false;
         
         for (const queryId of queryIds) {
-            // 方法1: 尝试查询 results collection
+            // Method 1: Try querying results collection
             try {
                 snap = await db.collection('results')
                     .where('userId', '==', userId)
@@ -89,22 +89,22 @@ router.get('/check', requireGoogleUser, async (req, res) => {
                 );
             }
             
-            // 方法2: 如果 queryId 是 Firestore doc ID，尝试从 userPhotos 读取
+            // Method 2: If queryId is Firestore doc ID, try reading from userPhotos
             if (queryId && queryId.length < 30) {
                 try {
                     const userPhotoDoc = await db.collection('userPhotos').doc(queryId).get();
                     if (userPhotoDoc.exists) {
                         const userPhotoData = userPhotoDoc.data();
-                        // 检查是否属于当前用户且有分析结果
+                        // Check if belongs to current user and has analysis result
                         if (userPhotoData.userId === userId && userPhotoData.analysisResult) {
-                            // 确保分析结果包含 baseUrl（从 userPhotoData 获取，如果 analysisResult 没有）
+                            // Ensure analysis result includes baseUrl (get from userPhotoData if analysisResult doesn't have it)
                             const analysisResult = { ...userPhotoData.analysisResult };
                             if (!analysisResult.baseUrl && userPhotoData.baseUrl) {
                                 analysisResult.baseUrl = userPhotoData.baseUrl;
                                 analysisResult.imageUrl = userPhotoData.baseUrl;
                             }
                             
-                            // 构造一个类似 results collection 的文档结构
+                            // Construct a document structure similar to results collection
                             snap = {
                                 docs: [{
                                     id: queryId,
@@ -125,7 +125,7 @@ router.get('/check', requireGoogleUser, async (req, res) => {
                 }
             }
             
-            // 方法3: 如果都失败，尝试内存过滤（仅对 results collection）
+            // Method 3: If all fail, try in-memory filtering (only for results collection)
             if (!querySucceeded) {
                 try {
                     const allResults = await db.collection('results')
@@ -153,7 +153,7 @@ router.get('/check', requireGoogleUser, async (req, res) => {
             }
         }
 
-        // 如果所有查询都失败，返回不存在
+        // If all queries fail, return not exists
         if (!snap) {
             snap = { empty: true };
         }
@@ -184,8 +184,8 @@ router.get('/check', requireGoogleUser, async (req, res) => {
             query: req.query
         });
         
-        // 如果是 Datastore Mode 错误，返回不存在（允许继续分析）
-        // 这样用户至少可以进行新的分析
+        // If Datastore Mode error, return not exists (allow continuing analysis)
+        // This way user can at least perform new analysis
         if (error.message && error.message.includes('Datastore Mode')) {
             logger.warn('[Analysis check] Datastore Mode error, returning exists=false to allow new analysis');
             return res.json({ exists: false });
@@ -199,18 +199,18 @@ router.get('/check', requireGoogleUser, async (req, res) => {
     }
 });
 
-// ========= 1. 运行 Vision API 分析 =========
+// ========= 1. Run Vision API analysis =========
 async function runVision(imageUrl, req = null) {
     try {
         logger.info('[runVision] Starting Vision API analysis for:', imageUrl.substring(0, 100));
         
-        // Google Photos URL 需要认证，需要先下载图片
+        // Google Photos URL requires authentication, need to download image first
         let imageSource;
         
-        // 检查是否是 Google Photos URL
+        // Check if it's a Google Photos URL
         if (imageUrl.includes('googleusercontent.com') || imageUrl.includes('google.com')) {
             try {
-                // 尝试获取 access token（如果 req 可用）
+                // Try to get access token (if req is available)
                 let accessToken = null;
                 if (req && req.cookies) {
                     try {
@@ -222,7 +222,7 @@ async function runVision(imageUrl, req = null) {
                     }
                 }
                 
-                // 下载图片内容
+                // Download image content
                 const headers = {};
                 if (accessToken) {
                     headers.Authorization = `Bearer ${accessToken}`;
@@ -235,21 +235,21 @@ async function runVision(imageUrl, req = null) {
                     timeout: 15000
                 });
                 
-                // 使用图片内容（buffer）
+                // Use image content (buffer)
                 const imageBuffer = Buffer.from(imageResponse.data);
                 imageSource = { content: imageBuffer };
                 logger.info('[runVision] Image downloaded successfully, size:', imageBuffer.length, 'bytes');
             } catch (downloadError) {
                 logger.warn('[runVision] Failed to download image, trying imageUri:', downloadError.message);
-                // 如果下载失败，回退到 imageUri 方式
+                // If download fails, fall back to imageUri method
                 imageSource = { source: { imageUri: imageUrl } };
             }
         } else {
-            // 对于其他 URL，使用 imageUri 方式
+            // For other URLs, use imageUri method
             imageSource = { source: { imageUri: imageUrl } };
         }
         
-        // 调用 Vision API
+        // Call Vision API
         const [visionResult] = await visionClient.annotateImage({
             image: imageSource,
             features: [
@@ -263,7 +263,7 @@ async function runVision(imageUrl, req = null) {
         logger.info('[runVision] Vision API response received, labels count:', visionResult.labelAnnotations?.length || 0);
         logger.info('[runVision] Vision API objects count:', visionResult.localizedObjectAnnotations?.length || 0);
         
-        // 如果 Vision API 返回的数据为空，记录警告
+        // If Vision API returns empty data, log warning
         if (!visionResult.labelAnnotations || visionResult.labelAnnotations.length === 0) {
             logger.warn('[runVision] WARNING: Vision API returned no labels! This may cause era to be "Undetermined"');
         }
@@ -271,17 +271,17 @@ async function runVision(imageUrl, req = null) {
             logger.warn('[runVision] WARNING: Vision API returned no objects!');
         }
 
-        // 提取 labels（格式：description:score）
+        // Extract labels (format: description:score)
         const labels = (visionResult.labelAnnotations || []).map(l =>
             `${l.description}:${Math.round(l.score * 1000) / 1000}`
         );
 
-        // 提取 objects（格式：name:score）
+        // Extract objects (format: name:score)
         const objects = (visionResult.localizedObjectAnnotations || []).map(o =>
             `${o.name}:${Math.round(o.score * 1000) / 1000}`
         );
         
-        // 记录前几个 labels 和 objects 用于调试
+        // Log first few labels and objects for debugging
         if (labels.length > 0) {
             logger.info('[runVision] Sample labels:', labels.slice(0, 5));
         }
@@ -289,7 +289,7 @@ async function runVision(imageUrl, req = null) {
             logger.info('[runVision] Sample objects:', objects.slice(0, 5));
         }
 
-        // 提取主要颜色
+        // Extract dominant colors
         const colors = [];
         try {
             const dom =
@@ -309,11 +309,11 @@ async function runVision(imageUrl, req = null) {
             logger.warn('[runVision] Failed to extract colors:', e);
         }
 
-        // OCR 文本
+        // OCR text
         const ocrText = visionResult.textAnnotations?.[0]?.description || '';
         const ocrExcerpt = ocrText.substring(0, 200);
 
-        // 提取服装相关关键词
+        // Extract clothing-related keywords
         const clothingVocab = [
             'dress', 'skirt', 'blouse', 'shirt', 'trousers', 'pants', 'jeans',
             'jacket', 'coat', 'hat', 'belt', 'polka dot', 'gingham', 'houndstooth',
@@ -348,7 +348,7 @@ async function runVision(imageUrl, req = null) {
             clothingKeywords: clothingKeywords
         });
         
-        // 如果特征数据太少，记录警告
+        // If feature data is too sparse, log warning
         if (labels.length === 0 && objects.length === 0) {
             logger.error('[runVision] ERROR: No labels or objects extracted! Vision API may have failed or image is invalid.');
         }
@@ -360,7 +360,7 @@ async function runVision(imageUrl, req = null) {
     }
 }
 
-// ========= 2. 运行 Gemini 分析 =========
+// ========= 2. Run Gemini analysis =========
 async function runGemini(features, imageUrl = null, req = null) {
     const GEMINI_PROMPT = `You are a vintage fashion expert.
 You will receive: (1) clothing-related features extracted by a vision API (labels, objects, colors, keywords),
@@ -398,7 +398,7 @@ CRITICAL REQUIREMENTS:
 - shopping_tips should be formatted as: "*Category:* Description" (e.g., "*Silhouettes:* Look for...")`;
 
     try {
-        // ✅ 使用一个稳定的 2.x 模型；可通过环境变量覆盖
+        // ✅ Use a stable 2.x model; can be overridden via environment variable
         const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
         const model = genAI.getGenerativeModel({ model: modelName });
         logger.info(`Using Gemini model: ${modelName}`);
@@ -412,17 +412,17 @@ CRITICAL REQUIREMENTS:
             }
         ];
 
-        // 如果提供了图片 URL，尝试包含图片（这对 Gemini 判断时代很重要）
+        // If image URL is provided, try to include image (important for Gemini to determine era)
         if (imageUrl) {
             try {
                 logger.info('[runGemini] Attempting to download image for Gemini:', imageUrl.substring(0, 100));
                 
-                // 对于 Google Photos URL，需要认证
+                // For Google Photos URL, authentication is required
                 const headers = {};
                 if ((imageUrl.includes('googleusercontent.com') || imageUrl.includes('google.com')) && req) {
                     try {
-                        // 尝试获取 access token（如果 req 可用）
-                        // 使用 analysis.js 中定义的 getAccessTokenFromCookies
+                        // Try to get access token (if req is available)
+                        // Use getAccessTokenFromCookies defined in analysis.js
                         const { token } = await getAccessTokenFromCookies(req, { cookie: () => {} });
                         if (token) {
                             headers.Authorization = `Bearer ${token}`;
@@ -456,8 +456,8 @@ CRITICAL REQUIREMENTS:
                     '[runGemini] Failed to include image in Gemini request, using features only:',
                     e.message
                 );
-                // 即使图片下载失败，我们仍然可以继续使用特征数据
-                // 但 Gemini 可能无法准确判断时代
+                // Even if image download fails, we can still continue using feature data
+                // But Gemini may not be able to accurately determine era
             }
         } else {
             logger.warn('[runGemini] No imageUrl provided, Gemini will rely on Vision features only');
@@ -468,7 +468,7 @@ CRITICAL REQUIREMENTS:
         
         logger.info('[runGemini] Raw Gemini response (first 500 chars):', text.substring(0, 500));
 
-        // 清理可能的 markdown 代码块
+        // Clean possible markdown code blocks
         if (text.startsWith('```')) {
             text = text
                 .replace(/^```json\s*/i, '')
@@ -477,7 +477,7 @@ CRITICAL REQUIREMENTS:
                 .trim();
         }
         
-        // 尝试提取 JSON（可能在文本中间）
+        // Try to extract JSON (may be in the middle of text)
         const jsonMatch = text.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
             text = jsonMatch[0];
@@ -486,11 +486,11 @@ CRITICAL REQUIREMENTS:
         try {
             const parsed = JSON.parse(text);
             logger.info('[runGemini] Successfully parsed Gemini response');
-            // 确保 search_queries 只有 en，没有 zh
+            // Ensure search_queries only has en, no zh
             if (parsed.search_queries && parsed.search_queries.zh) {
                 delete parsed.search_queries.zh;
             }
-            // 确保所有必需字段都存在
+            // Ensure all required fields exist
             if (!parsed.era_primary) parsed.era_primary = 'Undetermined';
             if (!parsed.style_tags) parsed.style_tags = [];
             if (!parsed.top3_candidates) parsed.top3_candidates = [];
@@ -502,7 +502,7 @@ CRITICAL REQUIREMENTS:
         } catch (parseError) {
             logger.error('[runGemini] JSON parse failed:', parseError);
             logger.error('[runGemini] Raw response:', text);
-            // 返回一个合理的默认结构
+            // Return a reasonable default structure
             return {
                 era_primary: 'Undetermined',
                 style_tags: [],
@@ -521,7 +521,7 @@ CRITICAL REQUIREMENTS:
 }
 
 /**
- * 分析照片（Vision + Gemini）
+ * Analyze photo (Vision + Gemini)
  * POST /api/analysis/analyze
  * body: { photoId: string, imageUrl: string, baseUrl?: string }
  */
@@ -540,18 +540,18 @@ router.post('/analyze', requireGoogleUser, async (req, res) => {
             `[Analysis] Starting analysis for user ${userId}, photoId=${photoId}`
         );
 
-        // 1. 运行 Vision API（传递 req 以便获取 access token 下载 Google Photos 图片）
+        // 1. Run Vision API (pass req to get access token for downloading Google Photos images)
         logger.info('[Analysis] Running Vision API...');
         logger.info('[Analysis] Image URL:', imageUrl);
         logger.info('[Analysis] Base URL:', baseUrl || 'not provided');
         const visionFeatures = await runVision(imageUrl, req);
         
-        // 检查 Vision API 返回的特征数据
+        // Check Vision API returned feature data
         if (!visionFeatures || (!visionFeatures.labels?.length && !visionFeatures.objects?.length)) {
             logger.warn('[Analysis] WARNING: Vision API returned minimal or no features. This will likely result in "Undetermined" era.');
         }
 
-        // 2. 运行 Gemini（如果 API key 存在）
+        // 2. Run Gemini (if API key exists)
         let geminiResult = null;
         if (process.env.GEMINI_API_KEY) {
             logger.info('[Analysis] Running Gemini API...');
@@ -562,16 +562,16 @@ router.post('/analyze', requireGoogleUser, async (req, res) => {
                 clothingKeywordsCount: visionFeatures.clothing_keywords?.length || 0
             });
             
-            // 优先使用 baseUrl，如果没有则使用 imageUrl
-            // baseUrl 通常是原始的 Google Photos URL，更适合 Gemini 直接访问
+            // Prefer baseUrl, if not available use imageUrl
+            // baseUrl is usually the original Google Photos URL, better for Gemini direct access
             const geminiImageUrl = baseUrl || imageUrl;
             logger.info('[Analysis] Using image URL for Gemini:', geminiImageUrl?.substring(0, 100));
             
-            // 传递 req 以便 runGemini 可以获取 access token 下载 Google Photos 图片
+            // Pass req so runGemini can get access token to download Google Photos images
             geminiResult = await runGemini(visionFeatures, geminiImageUrl, req);
             logger.info('[Analysis] Gemini result era_primary:', geminiResult?.era_primary || 'not set');
             
-            // 如果 era_primary 是 "Undetermined"，记录详细信息以便调试
+            // If era_primary is "Undetermined", log detailed info for debugging
             if (geminiResult?.era_primary === 'Undetermined') {
                 logger.warn('[Analysis] WARNING: Gemini returned "Undetermined" era. Possible reasons:');
                 logger.warn('[Analysis] - Vision features may be insufficient:', {
@@ -599,10 +599,10 @@ router.post('/analyze', requireGoogleUser, async (req, res) => {
             logger.warn('[Analysis] GEMINI_API_KEY not set, skipping Gemini');
         }
 
-        // 3. 保存到 results collection
+        // 3. Save to results collection
         const resultData = {
             userId,
-            photoId, // 保存原始的 photoId（可能是 Google Photos ID 或 doc ID）
+            photoId, // Save original photoId (may be Google Photos ID or doc ID)
             imageUrl: baseUrl || imageUrl,
             baseUrl: baseUrl || imageUrl,
             visionFeatures,
@@ -611,19 +611,19 @@ router.post('/analyze', requireGoogleUser, async (req, res) => {
             status: 'completed'
         };
 
-        // 如果 photoId 看起来像 Firestore doc ID（短字符串），也保存为 docId
+        // If photoId looks like Firestore doc ID (short string), also save as docId
         if (photoId && photoId.length < 30) {
             resultData.docId = photoId;
         }
 
-        // 保存分析结果
-        // 在 Datastore Mode 下，尝试多种保存方式
+        // Save analysis result
+        // In Datastore Mode, try multiple save methods
         let resultId;
         let saved = false;
         
-        // 方法1: 尝试保存到 results collection
+        // Method 1: Try saving to results collection
         try {
-            // 生成唯一 ID
+            // Generate unique ID
             resultId = `${userId}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
             const docRef = db.collection('results').doc(resultId);
             await docRef.set(resultData);
@@ -634,28 +634,28 @@ router.post('/analyze', requireGoogleUser, async (req, res) => {
         } catch (resultsError) {
             logger.warn('[Analysis] Failed to save to results collection:', resultsError.message);
             
-            // 方法2: 如果 photoId 是 Firestore doc ID，尝试更新 userPhotos 文档
+            // Method 2: If photoId is Firestore doc ID, try updating userPhotos document
             if (photoId && photoId.length < 30) {
                 try {
                     const userPhotoRef = db.collection('userPhotos').doc(photoId);
-                    // 检查文档是否存在且属于当前用户
+                    // Check if document exists and belongs to current user
                     const userPhotoDoc = await userPhotoRef.get();
                     if (userPhotoDoc.exists) {
                         const userPhotoData = userPhotoDoc.data();
                         if (userPhotoData.userId === userId) {
-                            // 确保 resultData 包含 baseUrl（从 userPhotoData 获取，如果 resultData 没有）
+                            // Ensure resultData includes baseUrl (get from userPhotoData if resultData doesn't have it)
                             if (!resultData.baseUrl && userPhotoData.baseUrl) {
                                 resultData.baseUrl = userPhotoData.baseUrl;
                                 resultData.imageUrl = userPhotoData.baseUrl;
                             }
                             
-                            // 更新 userPhotos 文档，添加分析结果并更新状态
+                            // Update userPhotos document, add analysis result and update status
                             await userPhotoRef.update({
-                                status: 'analyzed', // 更新状态为 analyzed，这样就不会出现在 pending 列表中了
+                                status: 'analyzed', // Update status to analyzed, so it won't appear in pending list
                                 analyzedAt: new Date(),
                                 analysisResult: resultData
                             });
-                            resultId = photoId; // 使用 photoId 作为 resultId
+                            resultId = photoId; // Use photoId as resultId
                             logger.info(
                                 `[Analysis] Result saved to userPhotos document and status updated to 'analyzed': ${photoId} for user ${userId}`
                             );
@@ -667,8 +667,8 @@ router.post('/analyze', requireGoogleUser, async (req, res) => {
                 }
             }
             
-            // 方法3: 即使保存到 results 失败，也尝试更新 userPhotos 状态（如果 photoId 是 doc ID）
-            // 这样至少可以确保照片不会重复出现在 pending 列表中
+            // Method 3: Even if saving to results fails, try updating userPhotos status (if photoId is doc ID)
+            // This way we can at least ensure photo won't appear repeatedly in pending list
             if (!saved && photoId && photoId.length < 30) {
                 try {
                     const userPhotoRef = db.collection('userPhotos').doc(photoId);
@@ -685,10 +685,10 @@ router.post('/analyze', requireGoogleUser, async (req, res) => {
                 }
             }
             
-            // 如果都失败了，记录错误但不阻止返回结果
+            // If all fail, log error but don't prevent returning result
             if (!saved) {
                 logger.error('[Analysis] All save methods failed, but returning result anyway');
-                // 生成一个临时 ID，至少让前端可以显示结果
+                // Generate a temporary ID, at least let frontend display result
                 resultId = `temp_${Date.now()}`;
             }
         }
@@ -711,7 +711,7 @@ router.post('/analyze', requireGoogleUser, async (req, res) => {
 });
 
 /**
- * 获取分析结果
+ * Get analysis result
  * GET /api/analysis/result/:resultId
  */
 router.get('/result/:resultId', requireGoogleUser, async (req, res) => {
@@ -737,7 +737,7 @@ router.get('/result/:resultId', requireGoogleUser, async (req, res) => {
 });
 
 /**
- * 获取用户所有分析结果（用于 analyzed photos 轮播）
+ * Get all analysis results for user (for analyzed photos carousel)
  * GET /api/analysis/results
  */
 router.get('/results', requireGoogleUser, async (req, res) => {
@@ -747,7 +747,7 @@ router.get('/results', requireGoogleUser, async (req, res) => {
 
         let snap;
         try {
-            // 尝试使用 orderBy（Native Mode）
+            // Try using orderBy (Native Mode)
             snap = await db
                 .collection('results')
                 .where('userId', '==', userId)
@@ -755,7 +755,7 @@ router.get('/results', requireGoogleUser, async (req, res) => {
                 .limit(limit)
                 .get();
         } catch (orderByError) {
-            // 如果 orderBy 失败（可能是 Datastore Mode 或缺少索引），尝试不带 orderBy
+            // If orderBy fails (may be Datastore Mode or missing index), try without orderBy
             logger.warn('[Analysis results] orderBy failed, trying without:', orderByError.message);
             snap = await db
                 .collection('results')
@@ -763,15 +763,15 @@ router.get('/results', requireGoogleUser, async (req, res) => {
                 .limit(limit)
                 .get();
             
-            // 在内存中排序
+            // Sort in memory
             const docs = snap.docs;
             docs.sort((a, b) => {
                 const aTime = a.data().analyzedAt?.toMillis?.() || 0;
                 const bTime = b.data().analyzedAt?.toMillis?.() || 0;
-                return bTime - aTime; // 降序
+                return bTime - aTime; // Descending order
             });
             
-            // 创建新的 QuerySnapshot-like 对象
+            // Create new QuerySnapshot-like object
             snap = {
                 docs: docs.slice(0, limit),
                 empty: docs.length === 0

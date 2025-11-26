@@ -10,7 +10,7 @@ const CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI;
 
-// Photos + 用户信息的 scope
+// Photos + user info scope
 const GOOGLE_SCOPE = [
     'https://www.googleapis.com/auth/photospicker.mediaitems.readonly',
     'https://www.googleapis.com/auth/photoslibrary.readonly',
@@ -19,11 +19,11 @@ const GOOGLE_SCOPE = [
     'openid',
 ].join(' ');
 
-// Step1: 前端点击按钮 → 跳到这里 → 再重定向到 Google 登录页
+// Step1: Frontend clicks button → redirect here → then redirect to Google login page
 router.get('/google', (req, res) => {
     const params = new URLSearchParams({
         client_id: CLIENT_ID,
-        redirect_uri: REDIRECT_URI, // 例如 http://localhost:3000/api/auth/google/callback
+        redirect_uri: REDIRECT_URI, // e.g., http://localhost:3000/api/auth/google/callback
         response_type: 'code',
         access_type: 'offline',
         prompt: 'consent',
@@ -33,11 +33,11 @@ router.get('/google', (req, res) => {
     res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
 });
 
-// Step2: Google 登录完成回调 → 换 token → 拿用户信息 → 写 Firestore → 设置 cookie
+// Step2: Google login callback → exchange token → get user info → write Firestore → set cookie
 router.get('/google/callback', async (req, res) => {
     const { code, error } = req.query;
 
-    // 处理错误情况
+    // Handle error cases
     if (error) {
         return res.send(`
       <!DOCTYPE html>
@@ -91,7 +91,7 @@ router.get('/google/callback', async (req, res) => {
     try {
         console.log('Processing Google OAuth callback, code:', code ? 'received' : 'missing');
 
-        // 2.1 用 code 换 token
+        // 2.1 Exchange code for token
         console.log('Exchanging code for token...');
         const tokenRes = await axios.post(
             'https://oauth2.googleapis.com/token',
@@ -109,7 +109,7 @@ router.get('/google/callback', async (req, res) => {
         console.log('Token received, access_token:', access_token ? 'yes' : 'no');
         console.log('Token scopes (raw):', tokenRes.data.scope);
         console.log('Full tokenRes.data:', tokenRes.data);
-        // 2.2 根据 access_token 获取 Google 用户基础信息
+        // 2.2 Get Google user basic info based on access_token
         console.log('Fetching user info from Google...');
         const userRes = await axios.get('https://www.googleapis.com/oauth2/v2/userinfo', {
             headers: { Authorization: `Bearer ${access_token}` },
@@ -119,12 +119,12 @@ router.get('/google/callback', async (req, res) => {
         const googleUser = userRes.data; // { id, email, name, picture, ... }
         const googleUserId = googleUser.id;
 
-        // 2.3 写 / 更新 Firestore 中的用户文档 users/{googleUserId}
+        // 2.3 Write / update user document in Firestore users/{googleUserId}
         try {
             console.log('Saving user to Firestore...');
             const userRef = firestore.collection('users').doc(googleUserId);
 
-            // 添加超时保护（5秒）
+            // Add timeout protection (5 seconds)
             const firestorePromise = userRef.set(
                 {
                     googleUserId,
@@ -144,19 +144,19 @@ router.get('/google/callback', async (req, res) => {
             await Promise.race([firestorePromise, timeoutPromise]);
             console.log('User saved to Firestore:', googleUserId);
         } catch (firestoreError) {
-            // Firestore 错误不影响登录流程，只记录日志
+            // Firestore errors don't affect login flow, only log
             console.error('Firestore save error (non-critical):', firestoreError.message);
             console.error('User can still login, Firestore will be updated later');
         }
 
-        // 2.4 用 cookie 保存当前登录的 googleUserId & access_token
+        // 2.4 Save current logged-in googleUserId & access_token in cookie
         console.log('Setting cookies...');
         const cookieOptions = {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
             path: '/',
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 天
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
         };
 
         res.cookie('google_user_id', googleUserId, cookieOptions);
@@ -166,7 +166,7 @@ router.get('/google/callback', async (req, res) => {
         }
         console.log('Cookies set successfully');
 
-        // 返回 HTML 页面，通过 postMessage 通知父窗口成功（如果有 popup）
+        // Return HTML page, notify parent window success via postMessage (if popup)
         console.log('Sending success response...');
         res.send(`
       <!DOCTYPE html>
@@ -213,7 +213,7 @@ router.get('/google/callback', async (req, res) => {
               <p>Redirecting...</p>
           </div>
           <script>
-              // 通知父窗口登录成功（如果是 popup）
+              // Notify parent window login success (if popup)
               if (window.opener) {
                   window.opener.postMessage({
                       type: 'GOOGLE_AUTH_SUCCESS',
@@ -230,7 +230,7 @@ router.get('/google/callback', async (req, res) => {
                       window.close();
                   }, 500);
               } else {
-                  // 如果不是 popup，直接重定向到 dashboard
+                  // If not popup, redirect directly to dashboard
                   window.location.href = '/dashboard.html';
               }
           </script>
@@ -275,9 +275,9 @@ router.get('/google/callback', async (req, res) => {
     `);
     }
 });
-// Logout: 清除登录相关的 cookie
+// Logout: Clear login-related cookies
 router.post('/logout', (req, res) => {
-    // 要和设置 cookie 时的 path / sameSite 一致，至少要带 path:'/'
+    // Must match path / sameSite when setting cookie, at least include path:'/'
     const cookieOptions = {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
@@ -292,8 +292,8 @@ router.post('/logout', (req, res) => {
     return res.status(200).json({ success: true });
 });
 
-// 获取当前登录用户信息（通过 cookie）
-// 挂在 /api/auth/me
+// Get current logged-in user info (via cookie)
+// Mounted at /api/auth/me
 router.get('/me', async (req, res) => {
     const googleUserId = req.cookies.google_user_id;
 

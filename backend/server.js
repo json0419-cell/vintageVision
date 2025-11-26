@@ -7,28 +7,28 @@ const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 const cookieParser = require('cookie-parser');
-// 加载环境变量：从 backend 目录下的 .env 文件加载
+// Load environment variables: Load from .env file in backend directory
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const logger = require('./utils/logger');
 
-// 路由
-const authRoutes = require('./routes/auth');          // 旧 JWT 路由（可选）
+// Routes
+const authRoutes = require('./routes/auth');          // Old JWT routes (optional)
 const googleAuthRouter = require('./routes/googleAuth'); // Google OAuth
 const photosRouter = require('./routes/photos');         // Google Photos
 const meRouter = require('./routes/me');                 // /api/auth/me
 const dashboardRoutes = require('./routes/dashboard');   // Dashboard
-const analysisRouter = require('./routes/analysis');     // Vision + Gemini 分析
+const analysisRouter = require('./routes/analysis');     // Vision + Gemini analysis
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-/* ------------------- 全局中间件（顺序非常重要） ------------------- */
+/* ------------------- Global Middleware (Order is Very Important) ------------------- */
 
-// ⭐ 1. cookie 解析（必须最前）
+// ⭐ 1. Cookie parsing (must be first)
 app.use(cookieParser());
 
-// 2. Helmet 安全策略
+// 2. Helmet security policy
 app.use(
     helmet({
         contentSecurityPolicy: {
@@ -37,13 +37,13 @@ app.use(
                 styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
                 scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
                 imgSrc: ["'self'", "data:", "https:"],
-                connectSrc: ["'self'", "https://cdn.jsdelivr.net"], // 允许 sourcemap
+                connectSrc: ["'self'", "https://cdn.jsdelivr.net"], // Allow sourcemap
             },
         },
     })
 );
 
-// 3. 限流（保护 /api/）
+// 3. Rate limiting (protect /api/)
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 100,
@@ -51,7 +51,7 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
-// 4. CORS（允许前端带 cookie）
+// 4. CORS (allow frontend to include cookies)
 app.use(
     cors({
         origin: process.env.FRONTEND_URL || 'http://localhost:3000',
@@ -59,7 +59,7 @@ app.use(
     })
 );
 
-// 5. 压缩 + 日志
+// 5. Compression + logging
 app.use(compression());
 app.use(
     morgan('combined', {
@@ -67,34 +67,34 @@ app.use(
     })
 );
 
-// 6. Body 解析
+// 6. Body parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// 7. 静态文件
+// 7. Static files
 app.use(express.static(path.join(__dirname, '../frontend')));
 
-/* ------------------- API 路由（全部必须在 cookieParser 之后） ------------------- */
+/* ------------------- API Routes (All must be after cookieParser) ------------------- */
 
-// Google OAuth 登录
+// Google OAuth login
 app.use('/api/auth', googleAuthRouter);
 
-// 如果还在用 JWT 的 authRoutes（可删）
+// If still using JWT authRoutes (can delete)
 app.use('/api/auth', authRoutes);
 
 // Google Photos
 app.use('/api', photosRouter);
 
-// 当前用户信息
+// Current user info
 app.use('/api', meRouter);
 
 // Dashboard API
 app.use('/api/dashboard', dashboardRoutes);
 
-// Vision + Gemini 分析
+// Vision + Gemini analysis
 app.use('/api/analysis', analysisRouter);
 
-// 健康检查
+// Health check
 app.get('/api/health', (req, res) => {
     res.status(200).json({
         status: 'OK',
@@ -102,14 +102,14 @@ app.get('/api/health', (req, res) => {
     });
 });
 
-/* ------------------- 前端路由（SPA 风格） ------------------- */
+/* ------------------- Frontend Routes (SPA style) ------------------- */
 
-// 所有非 /api 的请求 → 返回 index.html
+// All non-/api requests → return index.html
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
 
-/* ------------------- 错误处理 ------------------- */
+/* ------------------- Error Handling ------------------- */
 
 app.use((err, req, res, next) => {
     logger.error('Unhandled error:', err);
@@ -125,7 +125,7 @@ app.use((req, res) => {
     res.status(404).json({ error: 'Route not found' });
 });
 
-/* ------------------- 启动 ------------------- */
+/* ------------------- Startup ------------------- */
 
 app.listen(PORT, () => {
     logger.info(`Server running on port ${PORT}`);

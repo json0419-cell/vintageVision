@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Google 登录回调</title>
+    <title>Google Login Callback</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -39,8 +39,8 @@
 <body>
     <div class="callback-container">
         <div class="spinner"></div>
-        <h3>正在处理 Google 登录...</h3>
-        <p>请稍候，我们正在验证您的身份。</p>
+        <h3>Processing Google login...</h3>
+        <p>Please wait while we verify your identity.</p>
     </div>
 
     <script>
@@ -67,7 +67,7 @@
             // No code or error found
             window.opener.postMessage({
                 type: 'GOOGLE_AUTH_ERROR',
-                error: '未找到授权码'
+                error: 'Authorization code not found'
             }, window.location.origin);
             window.close();
         }

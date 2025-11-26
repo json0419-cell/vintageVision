@@ -74,9 +74,9 @@ class AuthAPI {
 
     async getGoogleAuthUrl() {
         try {
-            // googleAuthRouter 挂载在 /auth 路径下
-            // /auth/google 端点会直接重定向到 Google OAuth
-            // 对于 popup 窗口，直接返回这个 URL 即可
+            // googleAuthRouter is mounted at /auth path
+            // /auth/google endpoint will directly redirect to Google OAuth
+            // For popup window, just return this URL
             return '/auth/google';
         } catch (error) {
             console.error('Google auth URL error:', error);

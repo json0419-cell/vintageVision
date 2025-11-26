@@ -290,14 +290,14 @@
                                 <div class="text-center mb-4">
                                     <div class="position-relative">
                                         <hr>
-                                        <span class="position-absolute top-50 start-50 translate-middle bg-white px-3 text-muted small">或</span>
+                                        <span class="position-absolute top-50 start-50 translate-middle bg-white px-3 text-muted small">or</span>
                                     </div>
                                 </div>
                                 
                                 <div class="d-grid mb-4">
                                     <button type="button" class="btn btn-outline-primary" id="googleSignInBtn">
                                         <i class="bi bi-google me-2"></i>
-                                        使用 Google Photos 登录
+                                        Sign in with Google Photos
                                     </button>
                                 </div>
                             </form>
@@ -507,7 +507,7 @@
                         if (popup.closed) {
                             clearInterval(checkClosed);
                             hideLoading(googleSignInBtn);
-                            showAlert('Google登录已取消', 'danger');
+                            showAlert('Google login cancelled', 'danger');
                         }
                     }, 1000);
                     
@@ -520,22 +520,22 @@
                             window.removeEventListener('message', messageHandler);
                             
                             try {
-                                // Cookie 已经在后端设置好了，直接使用 postMessage 中的用户信息
+                                // Cookie is already set by backend, directly use user info from postMessage
                                 const { user } = event.data;
                                 
                                 if (user) {
-                                    showAlert('Google登录成功！正在跳转...', 'success');
+                                    showAlert('Google login successful! Redirecting...', 'success');
                                     
-                                    // 保存用户信息到 localStorage（可选，用于前端显示）
+                                    // Save user info to localStorage (optional, for frontend display)
                                     localStorage.setItem('user', JSON.stringify(user));
                                     
                                     setTimeout(() => {
                                         window.location.href = '/dashboard.html';
                                     }, 1000);
                                 } else {
-                                    // 如果没有直接提供 user，回退到调用 API
+                                    // If user is not directly provided, fall back to calling API
                                     const result = await window.authAPI.handleGoogleCallback(event.data.code);
-                                    showAlert('Google登录成功！正在跳转...', 'success');
+                                    showAlert('Google login successful! Redirecting...', 'success');
                                     
                                     setTimeout(() => {
                                         localStorage.setItem('authToken', result.token);
@@ -545,14 +545,14 @@
                                 }
                             } catch (error) {
                                 hideLoading(googleSignInBtn);
-                                showAlert(`Google登录失败: ${error.message}`);
+                                showAlert(`Google login failed: ${error.message}`);
                             }
                         } else if (event.data.type === 'GOOGLE_AUTH_ERROR') {
                             clearInterval(checkClosed);
                             window.removeEventListener('message', messageHandler);
                             popup.close();
                             hideLoading(googleSignInBtn);
-                            showAlert(`Google登录失败: ${event.data.error}`);
+                            showAlert(`Google login failed: ${event.data.error}`);
                         }
                     };
                     
@@ -560,7 +560,7 @@
                     
                 } catch (error) {
                     hideLoading(googleSignInBtn);
-                    showAlert(`获取Google登录链接失败: ${error.message}`);
+                    showAlert(`Failed to get Google login link: ${error.message}`);
                 }
             });
 

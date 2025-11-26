@@ -5,10 +5,10 @@ const logger = require('../utils/logger');
 const router = express.Router();
 const db = new Firestore();
 
-// ⭐ 临时的“鉴权”中间件：现在啥也不做，直接放行
-//   这样可以避免 Route.get() 报错，等以后切换到 google_user_id 再换成真正的登录校验
+// ⭐ Temporary "auth" middleware: Currently does nothing, just passes through
+//   This avoids Route.get() errors, later switch to google_user_id and replace with real login check
 function authenticateToken(req, res, next) {
-    // 将来如果要用 cookie 里的 google_user_id，可以这样：
+    // In the future if want to use google_user_id from cookie, can do this:
     // const googleUserId = req.cookies.google_user_id;
     // if (!googleUserId) return res.status(401).json({ error: 'Not authenticated' });
     // req.user = { id: googleUserId };
@@ -16,19 +16,19 @@ function authenticateToken(req, res, next) {
     next();
 }
 
-// 获取 Dashboard 统计信息
+// Get Dashboard statistics
 router.get('/stats', authenticateToken, async (req, res) => {
     try {
-        // ❗ 这里原来用的是 req.user.id（来自 JWT）
-        // 现在我们没有真正的鉴权逻辑，所以先写一个固定/占位的 userId（避免崩溃）
-        // 等你接上 google_user_id 后，把这里改成 const userId = req.user.id;
+        // ❗ Originally used req.user.id (from JWT)
+        // Now we don't have real auth logic, so write a fixed/placeholder userId (avoid crash)
+        // After you connect google_user_id, change this to const userId = req.user.id;
         const userId = req.user?.id || 'dummy-user-id';
 
-        // 获取用户文档
+        // Get user document
         const userDoc = await db.collection('users').doc(userId).get();
         const userData = userDoc.data() || {};
 
-        // 最近分析记录
+        // Recent analysis records
         const recentAnalysesQuery = await db.collection('analyses')
             .where('userId', '==', userId)
             .orderBy('uploadedAt', 'desc')
@@ -43,7 +43,7 @@ router.get('/stats', authenticateToken, async (req, res) => {
             confidence: doc.data().aiAnalysis?.confidence || 0,
         }));
 
-        // 统计各个时代（era）的数量
+        // Count number of each era
         const allAnalysesQuery = await db.collection('analyses')
             .where('userId', '==', userId)
             .get();
@@ -72,7 +72,7 @@ router.get('/stats', authenticateToken, async (req, res) => {
     }
 });
 
-// 获取用户风格画像
+// Get user style profile
 router.get('/profile', authenticateToken, async (req, res) => {
     try {
         const userId = req.user?.id || 'dummy-user-id';
@@ -94,11 +94,11 @@ router.get('/profile', authenticateToken, async (req, res) => {
             const { aiAnalysis } = analysis;
             if (!aiAnalysis) return;
 
-            // 统计时代
+            // Count eras
             const era = aiAnalysis.era || 'Unknown';
             styleProfile.favoriteEras[era] = (styleProfile.favoriteEras[era] || 0) + 1;
 
-            // 统计颜色偏好
+            // Count color preferences
             const colors = aiAnalysis.colors || '';
             const colorWords = colors.toLowerCase()
                 .split(/[,\s]+/)
@@ -111,20 +111,20 @@ router.get('/profile', authenticateToken, async (req, res) => {
                 styleProfile.colorPreferences[color] = (styleProfile.colorPreferences[color] || 0) + 1;
             });
 
-            // 记录信心趋势
+            // Record confidence trends
             styleProfile.confidenceTrend.push({
                 date: analysis.uploadedAt,
                 confidence: aiAnalysis.confidence || 0,
             });
         });
 
-        // favoriteEras 排序 + 取前 5
+        // Sort favoriteEras + take top 5
         styleProfile.favoriteEras = Object.entries(styleProfile.favoriteEras)
             .sort(([, a], [, b]) => b - a)
             .slice(0, 5)
             .map(([era, count]) => ({ era, count }));
 
-        // colorPreferences 排序 + 取前 5
+        // Sort colorPreferences + take top 5
         styleProfile.colorPreferences = Object.entries(styleProfile.colorPreferences)
             .sort(([, a], [, b]) => b - a)
             .slice(0, 5)
@@ -137,7 +137,7 @@ router.get('/profile', authenticateToken, async (req, res) => {
     }
 });
 
-// 获取近期活动
+// Get recent activity
 router.get('/activity', authenticateToken, async (req, res) => {
     try {
         const userId = req.user?.id || 'dummy-user-id';

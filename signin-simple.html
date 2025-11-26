@@ -95,14 +95,14 @@
                                 <div class="text-center mt-3 mb-3">
                                     <div class="position-relative">
                                         <hr>
-                                        <span class="position-absolute top-50 start-50 translate-middle bg-white px-3 text-muted small">或</span>
+                                        <span class="position-absolute top-50 start-50 translate-middle bg-white px-3 text-muted small">or</span>
                                     </div>
                                 </div>
                                 
                                 <div class="d-grid">
                                     <button type="button" class="btn btn-outline-primary btn-auth" id="googleSignInBtn">
                                         <i class="bi bi-google me-2"></i>
-                                        使用 Google Photos 登录
+                                        Sign in with Google Photos
                                     </button>
                                 </div>
                                 
@@ -208,16 +208,16 @@
                             localStorage.setItem('user', JSON.stringify(result.user));
                             window.location.href = '/dashboard.html';
                         } catch (error) {
-                            showAlert(`Google登录失败: ${error.message}`);
+                            showAlert(`Google login failed: ${error.message}`);
                         }
                     } else if (event.data.type === 'GOOGLE_AUTH_ERROR') {
                         popup.close();
-                        showAlert(`Google登录失败: ${event.data.error}`);
+                        showAlert(`Google login failed: ${event.data.error}`);
                     }
                 });
                 
             } catch (error) {
-                showAlert(`获取Google登录链接失败: ${error.message}`);
+                showAlert(`Failed to get Google login link: ${error.message}`);
             }
         });
 

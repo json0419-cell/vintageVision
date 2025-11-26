@@ -60,7 +60,7 @@
             flex: 1;
             display: flex;
             gap: 1.25rem;
-            overflow: hidden; /* 改为 hidden，通过 transform 来控制显示 */
+            overflow: hidden; /* Changed to hidden, control display via transform */
             padding-bottom: 0.25rem;
             position: relative;
         }
@@ -329,7 +329,7 @@
                 <li class="nav-item"><a class="nav-link" href="about.html">About</a></li>
                 <li class="nav-item"><a class="nav-link" href="contact.html">Contact</a></li>
 
-                <!-- 右上角头像/登录状态交给 nav-auth.js 来替换 -->
+                <!-- Top-right avatar/login status handled by nav-auth.js to replace -->
                 <li class="nav-item ms-3" id="navAuthItem">
                     <a class="nav-link" href="signin.html">Sign In</a>
                 </li>
@@ -367,7 +367,7 @@
                     </div>
                     <div class="card-body">
 
-                        <!-- 无照片时的提示 -->
+                        <!-- Prompt when no photos -->
                         <div id="originalPhotosEmpty" class="text-center text-muted py-4" style="display:none;">
                             <i class="bi bi-image fs-1 d-block mb-2"></i>
                             <p class="mb-0">
@@ -375,7 +375,7 @@
                             </p>
                         </div>
 
-                        <!-- 有照片时的横向卡片区域 -->
+                        <!-- Horizontal card area when photos exist -->
                         <div id="originalPhotosCarouselWrapper" style="display:none;">
                             <div class="carousel-row">
                                 <button class="carousel-arrow" id="originalLeft">
@@ -383,7 +383,7 @@
                                 </button>
 
                                 <div class="carousel-track" id="originalTrack">
-                                    <!-- JS 会往这个 inner 里塞卡片 -->
+                                    <!-- JS will insert cards into this inner -->
                                     <div id="originalCarouselInner" class="d-flex"></div>
                                 </div>
 
@@ -401,13 +401,13 @@
             </div>
         </section>
 
-        <!-- ANALYZED RESULTS (历史分析好的图片) -->
+        <!-- ANALYZED RESULTS (Historically analyzed images) -->
         <section class="row mb-4">
             <div class="col-12">
                 <div class="card dashboard-card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">Analyzed Results</h5>
-                        <!-- 预留一个刷新按钮，之后可以用来重新加载历史分析 -->
+                        <!-- Reserve a refresh button, can be used later to reload historical analysis -->
                         <!-- <button class="btn btn-outline-secondary btn-sm" id="btnRefreshAnalyzed">
                             <i class="bi bi-arrow-repeat me-1"></i>
                             Refresh

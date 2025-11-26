@@ -1,18 +1,18 @@
 // frontend/nav-auth.js
 
-// 这个文件会在所有页面运行：
-// 1. 调用 /api/auth/me 判断是否已登录
-// 2. 如果已登录：把右上角 "Sign In" 换成头像 + 下拉菜单
-// 3. 如果当前页有 “Try it now” 按钮，就根据登录状态跳转不同页面
+// This file runs on all pages:
+// 1. Call /api/auth/me to check if logged in
+// 2. If logged in: Replace "Sign In" with avatar + dropdown menu
+// 3. If current page has "Try it now" button, navigate to different pages based on login status
 
 document.addEventListener('DOMContentLoaded', async () => {
     let loggedIn = false;
     let user = null;
 
-    // 1. 查询当前登录状态
+    // 1. Check current login status
     try {
         const res = await fetch('/api/auth/me', {
-            credentials: 'include',  // ⭐ 必须带 cookie 才能识别登录
+            credentials: 'include',  // ⭐ Must include cookie to identify login
         });
 
         if (res.ok) {
@@ -26,13 +26,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error('nav-auth: /api/auth/me error', err);
     }
 
-    // 2. 处理 navbar 右上角
-    // 请在每个页面的 navbar 里给 "Sign In" 那个 <li> 加 id="navAuthItem"
+    // 2. Handle navbar top-right corner
+    // Please add id="navAuthItem" to the "Sign In" <li> in navbar on each page
     const navAuthItem = document.getElementById('navAuthItem');
 
     if (navAuthItem) {
         if (loggedIn && user) {
-            // 已登录：显示圆形头像 + 下拉菜单
+            // Logged in: Show circular avatar + dropdown menu
             const avatarUrl = user.picture || 'images/default-avatar.png';
             const displayName = user.name || user.email || 'User';
 
@@ -66,14 +66,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         </div>
       `;
 
-            // 下拉菜单里的"Choose more photos"
+            // "Choose more photos" in dropdown menu
             const choosePhotosBtn = document.getElementById('navChoosePhotosBtn');
             if (choosePhotosBtn) {
                 choosePhotosBtn.addEventListener('click', (e) => {
                     e.preventDefault();
 
-                    // 如果当前就是 dashboard 页面，而且 dashboard.js 已经挂了 openPhotosPicker，
-                    // 那就直接调用它 → 等价于点 "Choose from Google Photos" 按钮
+                    // If currently on dashboard page and dashboard.js has openPhotosPicker,
+                    // call it directly → equivalent to clicking "Choose from Google Photos" button
                     const isOnDashboard =
                         window.location.pathname.endsWith('/dashboard.html') ||
                         window.location.pathname.endsWith('dashboard.html');
@@ -81,20 +81,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (isOnDashboard && typeof window.openPhotosPicker === 'function') {
                         window.openPhotosPicker();
                     } else {
-                        // 不在 dashboard，先跳到 dashboard，并添加参数标记需要自动打开 picker
+                        // Not on dashboard, navigate to dashboard first, add parameter to auto-open picker
                         window.location.href = 'dashboard.html?openPicker=true';
                     }
                 });
             }
 
-            // 退出登录 → 调用后端 /api/auth/logout 清 cookie，然后回首页
+            // Logout → Call backend /api/auth/logout to clear cookies, then return to home page
             const logoutBtn = document.getElementById('navLogoutBtn');
             if (logoutBtn) {
                 logoutBtn.addEventListener('click', async () => {
                     try {
                         await fetch('/api/auth/logout', {
                             method: 'POST',
-                            credentials: 'include',   // ⭐ 必须带 cookie，让后端知道清谁
+                            credentials: 'include',   // ⭐ Must include cookie so backend knows who to clear
                         });
                     } catch (err) {
                         console.error('logout error:', err);
@@ -104,15 +104,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
             }
         } else {
-            // 未登录：保证还是显示 Sign In 链接
+            // Not logged in: Ensure Sign In link is still displayed
             navAuthItem.innerHTML = `
         <a class="nav-link" href="signin.html">Sign In</a>
       `;
         }
     }
 
-    // 3. 处理 Home 页上的 “Try it now” 按钮
-    // 请在 index.html 把按钮设成 id="tryItNowBtn"
+    // 3. Handle "Try it now" button on Home page
+    // Please set button id="tryItNowBtn" in index.html
     const tryItBtn = document.getElementById('tryItNowBtn');
     if (tryItBtn) {
         tryItBtn.addEventListener('click', (e) => {
