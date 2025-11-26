@@ -63,15 +63,17 @@
         
         .contact-card {
             background: var(--bg-primary);
-            border-radius: 16px;
-            box-shadow: var(--shadow-lg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
             padding: 3rem;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            transition: all var(--transition-base);
         }
         
         .contact-card:hover {
-            transform: translateY(-5px);
+            transform: translateY(-4px);
             box-shadow: var(--shadow-xl);
+            border-color: var(--primary-color);
         }
         
         .form-group {
@@ -86,34 +88,42 @@
         
         .form-control {
             border: 2px solid var(--border-color);
-            border-radius: 12px;
+            border-radius: var(--radius-md);
             padding: 0.875rem 1rem;
             font-size: 1rem;
-            transition: all 0.3s ease;
-            background: var(--bg-tertiary);
+            transition: all var(--transition-base);
+            background: var(--bg-primary);
         }
         
         .form-control:focus {
             border-color: var(--primary-color);
             box-shadow: 0 0 0 0.2rem rgba(31, 41, 55, 0.15);
             background: var(--bg-primary);
+            outline: none;
+        }
+        
+        .form-control:hover {
+            border-color: var(--accent-color);
         }
         
         .btn-primary {
             background: var(--primary-gradient);
             border: none;
-            border-radius: 12px;
+            border-radius: var(--radius-md);
             padding: 0.875rem 2rem;
             font-weight: 600;
             font-size: 1rem;
-            transition: all 0.3s ease;
+            transition: all var(--transition-base);
             position: relative;
             overflow: hidden;
+            color: var(--text-white);
+            box-shadow: var(--shadow-sm);
         }
         
         .btn-primary:hover {
             transform: translateY(-2px);
             box-shadow: var(--shadow-lg);
+            color: var(--text-white);
         }
         
         .btn-primary:active {
@@ -121,11 +131,17 @@
         }
         
         .contact-info {
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
             padding: 2rem;
             margin-bottom: 2rem;
+            transition: all var(--transition-base);
+        }
+        
+        .contact-info:hover {
+            box-shadow: var(--shadow-lg);
         }
         
         .contact-item {
@@ -133,14 +149,16 @@
             align-items: center;
             margin-bottom: 1.5rem;
             padding: 1rem;
-            background: #f8f9fa;
-            border-radius: 12px;
-            transition: all 0.3s ease;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            transition: all var(--transition-base);
         }
         
         .contact-item:hover {
-            background: #e9ecef;
+            background: var(--bg-secondary);
             transform: translateX(5px);
+            border-color: var(--primary-color);
         }
         
         .contact-icon {
@@ -206,10 +224,11 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ms-auto">
-                <li class="nav-item"><a class="nav-link" href="index.html">Home</a></li>
                 <li class="nav-item"><a class="nav-link" href="about.html">About</a></li>
                 <li class="nav-item"><a class="nav-link active" href="contact.html">Contact</a></li>
-                <li class="nav-item"><a class="nav-link" href="signin.html">Sign In</a></li>
+                <li class="nav-item ms-3" id="navAuthItem">
+                    <a class="nav-link" href="signin.html">Sign In</a>
+                </li>
             </ul>
         </div>
     </div>
@@ -404,5 +423,6 @@
         window.addEventListener('resize', setPad);
     })();
 </script>
+<script src="nav-auth.js"></script>
 </body>
 </html>

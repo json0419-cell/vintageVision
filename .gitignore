@@ -14,6 +14,7 @@ yarn-error.log*
 config.env
 backend/.env
 backend/config.env
+backend/config
 
 # Build outputs
 dist/
@@ -127,4 +128,5 @@ coverage/
 
 # Misc
 *.tsbuildinfo
+
 

@@ -5,14 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <title>Sign In | VintageVision</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link rel="stylesheet" href="style.css">
     <style>
-        :root {
-            --bg:#f6f7fb; --card:#fff; --ink:#111827; --muted:#6b7280;
-            --left-bg:#0f1a27; --left-ink:#ffffff;
-            --btn-border:#dadce0; --btn-text:#3c4043;
-        }
         body {
-            background: var(--bg);
+            background: var(--bg-secondary);
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
             margin: 0;
             height: 100vh;
@@ -24,27 +20,72 @@
             display: flex;
             width: 900px;
             max-width: 95%;
-            background: var(--card);
-            border-radius: 18px;
-            box-shadow: 0 20px 40px rgba(0,0,0,.08);
+            background: var(--bg-primary);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-2xl);
             overflow: hidden;
+            border: 1px solid var(--border-color);
+            animation: scaleIn 0.5s ease-out;
         }
         .left {
             flex: 1;
-            background: var(--left-bg);
-            color: var(--left-ink);
+            background: var(--primary-gradient);
+            color: var(--text-white);
             padding: 48px 32px;
             display: flex;
             flex-direction: column;
             justify-content: center;
             text-align: center;
             align-items: center;
+            position: relative;
+            overflow: hidden;
         }
-        .left img {width:140px;margin-bottom:28px;}
-        .left h1 {font-size:36px;font-weight:800;margin-bottom:12px;}
-        .left p.lead {color:#dbe4ee;font-size:18px;margin-bottom:28px;}
-        .badge-line {display:flex;align-items:center;justify-content:center;gap:12px;color:#e7eef7;}
-        .badge-dot {width:28px;height:28px;border-radius:50%;background:#1e90ff22;display:grid;place-items:center;}
+        .left::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            opacity: 0.2;
+        }
+        .left > * {
+            position: relative;
+            z-index: 1;
+        }
+        .left img {
+            width: 140px;
+            margin-bottom: 28px;
+            filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+        }
+        .left h1 {
+            font-size: 36px;
+            font-weight: 800;
+            margin-bottom: 12px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .left p.lead {
+            color: rgba(255,255,255,0.9);
+            font-size: 18px;
+            margin-bottom: 28px;
+        }
+        .badge-line {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            color: rgba(255,255,255,0.9);
+        }
+        .badge-dot {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.2);
+            display: grid;
+            place-items: center;
+            backdrop-filter: blur(10px);
+        }
         .right {
             flex: 1;
             padding: 48px 40px;
@@ -53,7 +94,12 @@
             justify-content: center;
             text-align: center;
         }
-        .right h2 {font-size:28px;font-weight:700;margin-bottom:24px;color:var(--ink);}
+        .right h2 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 24px;
+            color: var(--text-primary);
+        }
         .g-btn {
             display: flex;
             align-items: center;
@@ -61,22 +107,43 @@
             gap: 10px;
             width: 100%;
             height: 54px;
-            border: 1px solid var(--btn-border);
-            border-radius: 12px;
-            background: #fff;
-            color: var(--btn-text);
+            border: 2px solid var(--border-color);
+            border-radius: var(--radius-md);
+            background: var(--bg-primary);
+            color: var(--text-primary);
             font-weight: 600;
             font-size: 16px;
             user-select: none;
-            box-shadow: 0 1px 3px rgba(0,0,0,.06);
+            box-shadow: var(--shadow-sm);
+            transition: all var(--transition-base);
+            text-decoration: none;
         }
-        .g-btn img {width:20px;height:20px;}
-        .g-btn:hover {box-shadow:0 6px 18px rgba(60,64,67,.15);}
-        .note {color:var(--muted);font-size:14px;margin-top:18px;}
-        @media(max-width:900px){
-            .panel{flex-direction:column;width:90%;}
-            .left,.right{padding:32px 24px;}
-            .left{align-items:center;}
+        .g-btn img {
+            width: 20px;
+            height: 20px;
+        }
+        .g-btn:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
+            border-color: var(--primary-color);
+            background: var(--bg-primary);
+        }
+        .note {
+            color: var(--text-light);
+            font-size: 14px;
+            margin-top: 18px;
+        }
+        @media(max-width: 900px) {
+            .panel {
+                flex-direction: column;
+                width: 90%;
+            }
+            .left, .right {
+                padding: 32px 24px;
+            }
+            .left {
+                align-items: center;
+            }
         }
     </style>
 </head>
@@ -96,11 +163,11 @@
     </div>
     <div class="right">
         <h2>Sign In</h2>
-        <button class="g-btn" type="button">
+        <a class="g-btn" href="/api/auth/google">
             <img src="https://www.gstatic.com/images/branding/googleg/1x/googleg_standard_color_128dp.png" alt="Google">
             Continue with Google Photos
-        </button>
-        <p class="note">You’ll be redirected to Google to sign in (Demo Only)</p>
+        </a>
+        <p class="note">You’ll be redirected to Google to sign in</p>
     </div>
 </div>
 </body>

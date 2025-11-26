@@ -4,248 +4,470 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard | VintageVision</title>
+
+    <!-- Bootstrap & Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+
+    <!-- Global styles -->
     <link rel="stylesheet" href="style.css">
+
     <style>
-        .dashboard-card {
-            border: none;
-            border-radius: 15px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            transition: transform 0.2s ease-in-out;
+        body {
+            background: var(--bg-secondary);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
+
+        .dashboard-card {
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+            background: var(--bg-primary);
+            transition: all 0.3s ease;
+        }
+        
         .dashboard-card:hover {
+            box-shadow: var(--shadow-lg);
             transform: translateY(-2px);
         }
-        .stat-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+        
+        .dashboard-card .card-header {
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border-color);
+            padding: 1.25rem 1.5rem;
         }
-        .upload-area {
-            border: 2px dashed #dee2e6;
-            border-radius: 10px;
-            padding: 2rem;
+        
+        .dashboard-card .card-header h5 {
+            color: var(--text-primary);
+            font-weight: 600;
+            margin: 0;
+        }
+        
+        .dashboard-card .card-body {
+            padding: 1.5rem;
+            background: var(--bg-primary);
+        }
+
+        /* ---- Horizontal "carousel" row ---- */
+        .carousel-row {
+            display: flex;
+            align-items: center;
+            gap: 1.25rem;
+        }
+
+        .carousel-track {
+            flex: 1;
+            display: flex;
+            gap: 1.25rem;
+            overflow: hidden; /* 改为 hidden，通过 transform 来控制显示 */
+            padding-bottom: 0.25rem;
+            position: relative;
+        }
+
+        /* Loading Overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .loading-content {
+            background: white;
+            border-radius: 16px;
+            padding: 2.5rem 3rem;
             text-align: center;
-            transition: all 0.3s ease;
-            cursor: pointer;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+            width: 90%;
         }
-        .upload-area:hover {
-            border-color: #667eea;
-            background-color: #f8f9ff;
+
+        .loading-content h5 {
+            color: var(--text-primary);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
         }
-        .upload-area.dragover {
-            border-color: #667eea;
-            background-color: #e3f2fd;
+
+        .loading-content p {
+            font-size: 0.9rem;
         }
-        .analysis-item {
-            border-left: 4px solid #667eea;
-            padding-left: 1rem;
-            margin-bottom: 1rem;
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
         }
-        .era-badge {
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            color: white;
-            padding: 0.25rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.875rem;
+
+        .spinner-border {
+            border-width: 0.25em;
         }
-        .confidence-bar {
-            height: 8px;
-            background: #e9ecef;
-            border-radius: 4px;
+        
+        #originalCarouselInner {
+            display: flex;
+            gap: 1.25rem;
+            transition: transform 0.3s ease;
+            will-change: transform;
+        }
+        
+        #analyzedCarouselInner {
+            display: flex;
+            gap: 1.25rem;
+            transition: transform 0.3s ease;
+            will-change: transform;
+        }
+
+        .carousel-track::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .carousel-track::-webkit-scrollbar-thumb {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 3px;
+        }
+
+        .carousel-card {
+            flex: 0 0 180px;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: var(--shadow-sm);
             overflow: hidden;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s ease;
         }
-        .confidence-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #28a745, #20c997);
-            transition: width 0.3s ease;
+
+        .carousel-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary-color);
+        }
+        
+        .carousel-card .position-relative {
+            position: relative;
+        }
+
+        .carousel-card img {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            display: block;
+        }
+        
+        .photo-delete-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255, 255, 255, 0.9);
+            color: #dc3545;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s ease, background 0.2s ease;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            z-index: 10;
+        }
+        
+        .carousel-card:hover .photo-delete-btn {
+            opacity: 1;
+        }
+        
+        .photo-delete-btn:hover {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .photo-delete-btn i {
+            font-size: 16px;
+        }
+
+        .carousel-card-footer {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.8rem;
+            color: #4b5563;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .badge-overlay {
+            position: absolute;
+            bottom: 8px;
+            left: 8px;
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 999px;
+            background: rgba(0, 0, 0, 0.65);
+            color: #fff;
+        }
+
+        .carousel-arrow {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: 1px solid var(--border-color);
+            background: var(--bg-primary);
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.3s ease;
+            color: var(--text-primary);
+        }
+        
+        .carousel-arrow:hover:not(:disabled) {
+            background: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            box-shadow: var(--shadow-md);
+            transform: scale(1.1);
+        }
+
+        .carousel-arrow:disabled {
+            opacity: 0.4;
+            cursor: default;
+        }
+
+        /* Section spacing */
+        section.row {
+            margin-bottom: 2rem;
+        }
+        
+        /* Empty state styling */
+        #originalPhotosEmpty,
+        #analyzedPhotosEmpty {
+            color: var(--text-secondary);
+            padding: 3rem 1rem;
+        }
+        
+        #originalPhotosEmpty i,
+        #analyzedPhotosEmpty i {
+            color: var(--text-light);
+            opacity: 0.5;
+        }
+        
+        /* Button styling to match home page */
+        .btn-primary {
+            background: var(--primary-gradient);
+            border: none;
+            color: white;
+            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+            color: white;
+        }
+        
+        .btn-outline-primary {
+            border: 2px solid var(--primary-color);
+            color: var(--primary-color);
+            font-weight: 600;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            background: transparent;
+        }
+        
+        .btn-outline-primary:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+            border-color: var(--primary-color);
+        }
+        
+        @media (max-width: 768px) {
+            .carousel-row {
+                gap: 1rem;
+            }
+            .carousel-card {
+                flex: 0 0 150px;
+            }
+            .carousel-row {
+                gap: 0.75rem;
+            }
         }
     </style>
 </head>
+
 <body class="d-flex flex-column min-vh-100">
 
+<!-- Navbar -->
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top shadow-sm">
     <div class="container-fluid">
         <a class="navbar-brand fw-semibold" href="index.html">VintageVision</a>
+
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
             <span class="navbar-toggler-icon"></span>
         </button>
+
         <div class="collapse navbar-collapse" id="navbarNav">
             <ul class="navbar-nav ms-auto">
-                <li class="nav-item"><a class="nav-link" href="index.html">Home</a></li>
                 <li class="nav-item"><a class="nav-link" href="about.html">About</a></li>
                 <li class="nav-item"><a class="nav-link" href="contact.html">Contact</a></li>
-                <li class="nav-item"><a class="nav-link active" href="#" id="userMenu">Dashboard</a></li>
-                <li class="nav-item">
-                    <button class="btn btn-outline-light btn-sm" onclick="logout()">
-                        <i class="bi bi-box-arrow-right"></i> Logout
-                    </button>
+
+                <!-- 右上角头像/登录状态交给 nav-auth.js 来替换 -->
+                <li class="nav-item ms-3" id="navAuthItem">
+                    <a class="nav-link" href="signin.html">Sign In</a>
                 </li>
             </ul>
         </div>
     </div>
 </nav>
 
-<main class="flex-grow-1 pt-5 mt-5">
-    <div class="container-fluid">
+<!-- Main -->
+<main class="flex-grow-1 pt-5 mt-5" style="background: var(--bg-secondary);">
+    <div class="container" style="max-width: 1200px;">
+
         <!-- Welcome Section -->
-        <div class="row mb-4">
+        <div class="row mb-5">
             <div class="col-12">
-                <h1 class="h2 mb-1">Welcome back, <span id="userName">User</span>!</h1>
-                <p class="text-muted">Analyze your fashion style and discover new trends</p>
+                <h1 class="h2 mb-2" style="color: var(--text-primary); font-weight: 700;">
+                    Welcome back, <span id="userName">User</span>!
+                </h1>
+                <p class="text-muted">
+                    Manage and analyze your fashion inspiration photos
+                </p>
             </div>
         </div>
 
-        <!-- Stats Cards -->
-        <div class="row mb-4">
-            <div class="col-md-3 mb-3">
-                <div class="card dashboard-card stat-card">
-                    <div class="card-body text-center">
-                        <i class="bi bi-camera2 fs-1 mb-2"></i>
-                        <h3 class="card-title" id="totalAnalyses">0</h3>
-                        <p class="card-text">Total Analyses</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 mb-3">
-                <div class="card dashboard-card">
-                    <div class="card-body text-center">
-                        <i class="bi bi-star fs-1 mb-2 text-warning"></i>
-                        <h3 class="card-title" id="avgConfidence">0</h3>
-                        <p class="card-text">Avg Confidence</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 mb-3">
-                <div class="card dashboard-card">
-                    <div class="card-body text-center">
-                        <i class="bi bi-calendar3 fs-1 mb-2 text-info"></i>
-                        <h3 class="card-title" id="memberSince">-</h3>
-                        <p class="card-text">Member Since</p>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 mb-3">
-                <div class="card dashboard-card">
-                    <div class="card-body text-center">
-                        <i class="bi bi-clock-history fs-1 mb-2 text-success"></i>
-                        <h3 class="card-title" id="lastLogin">-</h3>
-                        <p class="card-text">Last Login</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Upload Section -->
-        <div class="row mb-4">
+        <!-- ORIGINAL PHOTOS (from Google Photos Picker) -->
+        <section class="row mb-4">
             <div class="col-12">
                 <div class="card dashboard-card">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="bi bi-cloud-upload"></i> Upload & Analyze</h5>
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Original Photos</h5>
+                        <button class="btn btn-outline-primary btn-sm" id="btnPickFromGoogle">
+                            <i class="bi bi-images me-1"></i>
+                            Choose from Google Photos
+                        </button>
                     </div>
                     <div class="card-body">
-                        <div class="upload-area" id="uploadArea">
-                            <i class="bi bi-cloud-upload fs-1 text-muted mb-3"></i>
-                            <h5>Drop your image here or click to browse</h5>
-                            <p class="text-muted">Supports JPEG, PNG, and WebP formats</p>
-                            <input type="file" id="imageUpload" accept="image/*" class="d-none">
-                            <button class="btn btn-primary" onclick="document.getElementById('imageUpload').click()">
-                                Choose File
-                            </button>
-                        </div>
-                        <div id="uploadProgress" class="mt-3 d-none">
-                            <div class="progress">
-                                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
-                            </div>
-                            <p class="text-center mt-2">Analyzing your image...</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        <!-- Analysis Results -->
-        <div class="row mb-4" id="analysisResults" style="display: none;">
-            <div class="col-12">
-                <div class="card dashboard-card">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="bi bi-graph-up"></i> Analysis Results</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <img id="analyzedImage" class="img-fluid rounded" alt="Analyzed image">
-                            </div>
-                            <div class="col-md-6">
-                                <h6>Style Era</h6>
-                                <span class="era-badge" id="styleEra">-</span>
-                                
-                                <h6 class="mt-3">Confidence</h6>
-                                <div class="confidence-bar">
-                                    <div class="confidence-fill" id="confidenceBar" style="width: 0%"></div>
+                        <!-- 无照片时的提示 -->
+                        <div id="originalPhotosEmpty" class="text-center text-muted py-4" style="display:none;">
+                            <i class="bi bi-image fs-1 d-block mb-2"></i>
+                            <p class="mb-0">
+                                No photos yet. Click “Choose from Google Photos” to start.
+                            </p>
+                        </div>
+
+                        <!-- 有照片时的横向卡片区域 -->
+                        <div id="originalPhotosCarouselWrapper" style="display:none;">
+                            <div class="carousel-row">
+                                <button class="carousel-arrow" id="originalLeft">
+                                    <i class="bi bi-chevron-left"></i>
+                                </button>
+
+                                <div class="carousel-track" id="originalTrack">
+                                    <!-- JS 会往这个 inner 里塞卡片 -->
+                                    <div id="originalCarouselInner" class="d-flex"></div>
                                 </div>
-                                <small class="text-muted" id="confidenceText">0%</small>
-                                
-                                <h6 class="mt-3">Key Elements</h6>
-                                <p id="keyElements">-</p>
-                                
-                                <h6 class="mt-3">Recommendations</h6>
-                                <p id="recommendations">-</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
-        <!-- Recent Analyses -->
-        <div class="row mb-4">
-            <div class="col-md-8">
-                <div class="card dashboard-card">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Analyses</h5>
-                    </div>
-                    <div class="card-body">
-                        <div id="recentAnalyses">
-                            <div class="text-center text-muted">
-                                <i class="bi bi-hourglass-split fs-1"></i>
-                                <p>No analyses yet. Upload your first image to get started!</p>
+                                <button class="carousel-arrow" id="originalRight">
+                                    <i class="bi bi-chevron-right"></i>
+                                </button>
                             </div>
+                            <small class="text-muted d-block mt-2">
+                                Click a photo to analyze it with Vision &amp; Gemini.
+                            </small>
                         </div>
+
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
+        </section>
+
+        <!-- ANALYZED RESULTS (历史分析好的图片) -->
+        <section class="row mb-4">
+            <div class="col-12">
                 <div class="card dashboard-card">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="bi bi-palette"></i> Style Profile</h5>
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Analyzed Results</h5>
+                        <!-- 预留一个刷新按钮，之后可以用来重新加载历史分析 -->
+                        <!-- <button class="btn btn-outline-secondary btn-sm" id="btnRefreshAnalyzed">
+                            <i class="bi bi-arrow-repeat me-1"></i>
+                            Refresh
+                        </button> -->
                     </div>
                     <div class="card-body">
-                        <h6>Favorite Eras</h6>
-                        <div id="favoriteEras">
-                            <p class="text-muted small">Upload images to see your style preferences</p>
+
+                        <div id="analyzedPhotosEmpty" class="text-center text-muted py-4" style="display:none;">
+                            <i class="bi bi-graph-up fs-1 d-block mb-2"></i>
+                            <p class="mb-0">
+                                No analyzed results yet. Analyze a photo to see it here.
+                            </p>
                         </div>
-                        
-                        <h6 class="mt-3">Color Preferences</h6>
-                        <div id="colorPreferences">
-                            <p class="text-muted small">Color analysis will appear here</p>
+
+                        <div id="analyzedPhotosCarouselWrapper" style="display:none;">
+                            <div class="carousel-row">
+                                <button class="carousel-arrow" id="analyzedLeft">
+                                    <i class="bi bi-chevron-left"></i>
+                                </button>
+
+                                <div class="carousel-track" id="analyzedTrack">
+                                    <div id="analyzedCarouselInner" class="d-flex"></div>
+                                </div>
+
+                                <button class="carousel-arrow" id="analyzedRight">
+                                    <i class="bi bi-chevron-right"></i>
+                                </button>
+                            </div>
+                            <small class="text-muted d-block mt-2">
+                                Click a photo to view its saved analysis.
+                            </small>
                         </div>
+
                     </div>
                 </div>
             </div>
-        </div>
+        </section>
+
     </div>
 </main>
+
+<!-- Loading Overlay -->
+<div id="analysisLoadingOverlay" class="loading-overlay" style="display: none;">
+    <div class="loading-content">
+        <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <h5 class="mb-2">Analyzing Image</h5>
+        <p class="text-muted mb-0" id="loadingMessage">Processing your image with AI...</p>
+    </div>
+</div>
 
 <footer class="text-center py-4 bg-dark text-light mt-auto">
     © 2025 Vintage Vision. All Rights Reserved.
 </footer>
 
+<!-- Scripts -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="utils.js"></script>
+<script src="nav-auth.js"></script>
 <script src="dashboard.js"></script>
 </body>
 </html>
-
-
-
-

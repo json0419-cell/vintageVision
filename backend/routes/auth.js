@@ -4,11 +4,35 @@ const bcrypt = require('bcryptjs');
 const { body, validationResult } = require('express-validator');
 const { Firestore } = require('@google-cloud/firestore');
 const { google } = require('googleapis');
-const authenticateToken = require('../middleware/auth');
 const logger = require('../utils/logger');
 
 const router = express.Router();
 const db = new Firestore();
+
+// Middleware to verify JWT token
+const authenticateToken = async (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) {
+    return res.status(401).json({ error: 'Access token required' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    const userDoc = await db.collection('users').doc(decoded.userId).get();
+    
+    if (!userDoc.exists) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+
+    req.user = { id: decoded.userId, ...userDoc.data() };
+    next();
+  } catch (error) {
+    logger.error('Token verification failed:', error);
+    return res.status(403).json({ error: 'Invalid or expired token' });
+  }
+};
 
 // Register new user
 router.post('/register', [
@@ -182,19 +206,18 @@ router.get('/google', (req, res) => {
 });
 
 // Google OAuth callback redirect endpoint
+// 重定向到 googleAuth.js 的路由进行处理
 router.get('/google/callback', (req, res) => {
   const { code, error, state } = req.query;
   
-  if (error) {
-    return res.redirect(`/google-callback.html?error=${encodeURIComponent(error)}`);
-  }
+  // 构建查询参数
+  const params = new URLSearchParams();
+  if (code) params.append('code', code);
+  if (error) params.append('error', error);
+  if (state) params.append('state', state);
   
-  if (!code) {
-    return res.redirect('/google-callback.html?error=no_code');
-  }
-  
-  // Redirect to callback page with the authorization code
-  res.redirect(`/google-callback.html?code=${encodeURIComponent(code)}`);
+  // 重定向到 googleAuth.js 的路由（挂载在 /auth 路径下）
+  res.redirect(`/auth/google/callback?${params.toString()}`);
 });
 
 // Google OAuth callback endpoint
