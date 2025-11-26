@@ -156,6 +156,7 @@ async function pollPickerSession(sessionId) {
 
 // Carousel state
 let originalCarouselIndex = 0;
+let analyzedCarouselIndex = 0;
 const photosPerView = 3; // Display 3 images at once
 
 // Store current displayed photo ID set (for detecting new photos)
@@ -450,6 +451,7 @@ function renderAnalyzedCarousel(items) {
         DOM.toggle(emptyDiv, true);
         DOM.toggle(wrapper, false);
         inner.innerHTML = '';
+        analyzedCarouselIndex = 0;
         return;
     }
 
@@ -496,7 +498,28 @@ function renderAnalyzedCarousel(items) {
         });
     });
     
-    // TODO: Add left/right arrow controls (similar to originalCarousel)
+    // Update carousel display
+    updateAnalyzedCarouselView(items.length);
+    
+    // Bind left/right arrow events
+    if (leftBtn) {
+        leftBtn.onclick = () => {
+            if (analyzedCarouselIndex > 0) {
+                analyzedCarouselIndex--;
+                updateAnalyzedCarouselView(items.length);
+            }
+        };
+    }
+    
+    if (rightBtn) {
+        rightBtn.onclick = () => {
+            const maxIndex = Math.max(0, items.length - photosPerView);
+            if (analyzedCarouselIndex < maxIndex) {
+                analyzedCarouselIndex++;
+                updateAnalyzedCarouselView(items.length);
+            }
+        };
+    }
 }
 
 // Update carousel view
@@ -520,9 +543,38 @@ function updateCarouselView(totalItems) {
     }
     
     // Calculate scroll position (card width + gap)
-    const cardWidth = 170; // Matches CSS flex: 0 0 170px
-    const gap = 12; // 0.75rem = 12px
+    const cardWidth = 180; // Matches CSS flex: 0 0 180px
+    const gap = 20; // 1.25rem = 20px
     const scrollPosition = originalCarouselIndex * (cardWidth + gap);
+    
+    inner.style.transform = `translateX(-${scrollPosition}px)`;
+    inner.style.transition = 'transform 0.3s ease';
+}
+
+// Update analyzed carousel view
+function updateAnalyzedCarouselView(totalItems) {
+    const inner = document.getElementById('analyzedCarouselInner');
+    const leftBtn = document.getElementById('analyzedLeft');
+    const rightBtn = document.getElementById('analyzedRight');
+    
+    if (!inner) return;
+    
+    // Calculate max index
+    const maxIndex = Math.max(0, totalItems - photosPerView);
+    analyzedCarouselIndex = Math.min(analyzedCarouselIndex, maxIndex);
+    
+    // Update button states
+    if (leftBtn) {
+        leftBtn.disabled = analyzedCarouselIndex === 0;
+    }
+    if (rightBtn) {
+        rightBtn.disabled = analyzedCarouselIndex >= maxIndex;
+    }
+    
+    // Calculate scroll position (card width + gap)
+    const cardWidth = 180; // Matches CSS flex: 0 0 180px
+    const gap = 20; // 1.25rem = 20px
+    const scrollPosition = analyzedCarouselIndex * (cardWidth + gap);
     
     inner.style.transform = `translateX(-${scrollPosition}px)`;
     inner.style.transition = 'transform 0.3s ease';
@@ -542,8 +594,9 @@ async function logout() {
 document.addEventListener('DOMContentLoaded', async () => {
     await ensureLoggedIn();
     
-    // Initialize carousel index
+    // Initialize carousel indices
     originalCarouselIndex = 0;
+    analyzedCarouselIndex = 0;
     
     // Load analyzed photos
     await loadAnalyzedPhotos();
