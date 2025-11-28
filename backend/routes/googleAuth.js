@@ -1,4 +1,7 @@
 // backend/routes/googleAuth.js
+// Ensure environment variables are loaded (in case this file is required independently)
+require('../config/env')();
+
 const express = require('express');
 const axios = require('axios');
 const qs = require('qs');

@@ -1,3 +1,6 @@
+// Ensure environment variables are loaded
+require('../config/env')();
+
 const winston = require('winston');
 
 const logger = winston.createLogger({

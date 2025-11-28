@@ -498,5 +498,106 @@ footer {
     cursor: default;
 }
 
+/* How It Works Section */
+.how-it-works {
+    background: var(--bg-primary);
+    padding: 5rem 0;
+}
+
+.how-it-works-title {
+    text-align: center;
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 4rem;
+    letter-spacing: -0.02em;
+}
+
+.how-it-works-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 3rem;
+    max-width: 900px;
+    margin: 0 auto;
+    align-items: start;
+}
+
+.how-it-works-step {
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.step-3 {
+    grid-column: 1 / -1;
+    justify-self: center;
+    max-width: 400px;
+}
+
+.step-icon-wrapper {
+    width: 80px;
+    height: 80px;
+    background: #3B82F6;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.step-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    letter-spacing: -0.01em;
+}
+
+.step-description {
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    max-width: 320px;
+    margin: 0;
+}
+
+/* Responsive design for How It Works */
+@media (max-width: 768px) {
+    .how-it-works {
+        padding: 3rem 0;
+    }
+    
+    .how-it-works-title {
+        font-size: 2rem;
+        margin-bottom: 3rem;
+    }
+    
+    .how-it-works-grid {
+        grid-template-columns: 1fr;
+        gap: 2.5rem;
+    }
+    
+    .step-3 {
+        grid-column: 1;
+        max-width: 100%;
+    }
+    
+    .step-icon-wrapper {
+        width: 70px;
+        height: 70px;
+    }
+    
+    .step-title {
+        font-size: 1.25rem;
+    }
+    
+    .step-description {
+        font-size: 0.95rem;
+        max-width: 100%;
+    }
+}
+
 
 

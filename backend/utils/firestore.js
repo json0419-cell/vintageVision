@@ -1,4 +1,7 @@
 // backend/utils/firestore.js
+// Ensure environment variables are loaded
+require('../config/env')();
+
 const { Firestore, FieldValue } = require('@google-cloud/firestore');
 const path = require('path');
 

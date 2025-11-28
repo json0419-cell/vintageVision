@@ -22,8 +22,7 @@ async function ensureLoggedIn() {
             nameSpan.textContent = user.name || 'User';
         }
 
-        // Load existing pending photos from Firestore
-        await loadPendingPhotos();
+        // Setup picker button (photos will be loaded in DOMContentLoaded)
         setupPickerButton();
     } catch (err) {
         Logger.error('ensureLoggedIn error:', err);
@@ -239,7 +238,7 @@ function renderOriginalCarousel(items) {
             <div class="carousel-card" data-index="${idx}" data-photo-id="${photoId}" data-doc-id="${firestoreDocId}">
                 <div class="position-relative">
                     <img src="${proxyUrl || imgUrl}" alt="${filename}" 
-                         onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'400\\' height=\\'400\\'%3E%3Crect fill=\\'%23ddd\\' width=\\'400\\' height=\\'400\\'/%3E%3Ctext x=\\'50%25\\' y=\\'50%25\\' text-anchor=\\'middle\\' dy=\\'.3em\\' fill=\\'%23999\\'%3EImage not available%3C/text%3E%3C/svg%3E'; console.error('Failed to load image:', '${imgUrl}');"
+                         data-fallback-url="${imgUrl}"
                          loading="lazy">
                     <button class="photo-delete-btn" data-photo-id="${photoId}" title="Delete photo">
                         <i class="bi bi-x-circle"></i>
@@ -310,6 +309,17 @@ function renderOriginalCarousel(items) {
             }
         });
     });
+    
+    // Bind image error handlers (for CSP compliance)
+    const images = inner.querySelectorAll('img');
+    const placeholderSvg = 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'400\' height=\'400\'%3E%3Crect fill=\'%23ddd\' width=\'400\' height=\'400\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\' fill=\'%23999\'%3EImage not available%3C/text%3E%3C/svg%3E';
+    images.forEach(img => {
+        img.addEventListener('error', function() {
+            const fallbackUrl = this.getAttribute('data-fallback-url');
+            Logger.error('[Image error] Failed to load image:', fallbackUrl || this.src);
+            this.src = placeholderSvg;
+        });
+    });
 }
 
 // Delete photo
@@ -356,8 +366,12 @@ async function deleteAnalysisResult(resultId) {
         Logger.log(`[deleteAnalysisResult] Deleting result ${resultId}`);
         await apiDelete(`/api/analysis/result/${resultId}`);
         
-        // Reload analyzed photos list
-        await loadAnalyzedPhotos();
+        // Reload both carousels: analyzed photos and pending photos
+        // (Deleting analysis result may move the photo back to pending status)
+        await Promise.all([
+            loadAnalyzedPhotos(),
+            loadPendingPhotos()
+        ]);
         
         // Show success message
         Notification.success('Analysis result deleted successfully');
@@ -507,7 +521,7 @@ function renderAnalyzedCarousel(items) {
             <div class="carousel-card" data-index="${idx}" data-result-id="${resultId}">
                 <div class="position-relative">
                     <img src="${proxyUrl || imgUrl}" alt="Analyzed photo" 
-                         onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'400\\' height=\\'400\\'%3E%3Crect fill=\\'%23ddd\\' width=\\'400\\' height=\\'400\\'/%3E%3Ctext x=\\'50%25\\' y=\\'50%25\\' text-anchor=\\'middle\\' dy=\\'.3em\\' fill=\\'%23999\\'%3EImage not available%3C/text%3E%3C/svg%3E';"
+                         data-fallback-url="${imgUrl}"
                          loading="lazy">
                     <button class="photo-delete-btn" data-result-id="${resultId}" title="Delete analysis result">
                         <i class="bi bi-x-circle"></i>
@@ -543,6 +557,17 @@ function renderAnalyzedCarousel(items) {
             if (resultId) {
                 window.location.href = `result.html?id=${resultId}`;
             }
+        });
+    });
+    
+    // Bind image error handlers (for CSP compliance)
+    const images = inner.querySelectorAll('img');
+    const placeholderSvg = 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'400\' height=\'400\'%3E%3Crect fill=\'%23ddd\' width=\'400\' height=\'400\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\' fill=\'%23999\'%3EImage not available%3C/text%3E%3C/svg%3E';
+    images.forEach(img => {
+        img.addEventListener('error', function() {
+            const fallbackUrl = this.getAttribute('data-fallback-url');
+            Logger.error('[Image error] Failed to load image:', fallbackUrl || this.src);
+            this.src = placeholderSvg;
         });
     });
     
@@ -646,8 +671,11 @@ document.addEventListener('DOMContentLoaded', async () => {
     originalCarouselIndex = 0;
     analyzedCarouselIndex = 0;
     
-    // Load analyzed photos
-    await loadAnalyzedPhotos();
+    // Load both carousels
+    await Promise.all([
+        loadPendingPhotos(),
+        loadAnalyzedPhotos()
+    ]);
     
     // Check URL parameter, auto-open picker if needed
     if (URLUtils.getParam('openPicker') === 'true') {
@@ -667,5 +695,38 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }, 500);
             }
         }, 300);
+    }
+});
+
+// Reload carousels when page becomes visible (e.g., returning from result page)
+// This handles browser back/forward navigation and tab switching
+document.addEventListener('visibilitychange', async () => {
+    if (!document.hidden) {
+        // Page became visible, reload both carousels to sync state
+        Logger.log('[dashboard] Page became visible, reloading carousels...');
+        try {
+            await Promise.all([
+                loadPendingPhotos(),
+                loadAnalyzedPhotos()
+            ]);
+        } catch (error) {
+            Logger.error('[dashboard] Error reloading carousels:', error);
+        }
+    }
+});
+
+// Also handle pageshow event for browser back/forward navigation
+window.addEventListener('pageshow', async (event) => {
+    // event.persisted is true if page was loaded from cache (back/forward navigation)
+    if (event.persisted) {
+        Logger.log('[dashboard] Page loaded from cache, reloading carousels...');
+        try {
+            await Promise.all([
+                loadPendingPhotos(),
+                loadAnalyzedPhotos()
+            ]);
+        } catch (error) {
+            Logger.error('[dashboard] Error reloading carousels:', error);
+        }
     }
 });

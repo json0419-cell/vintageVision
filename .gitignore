@@ -14,7 +14,7 @@ yarn-error.log*
 config.env
 backend/.env
 backend/config.env
-backend/config
+backend/config/google-credentials.json
 
 # Build outputs
 dist/
@@ -115,7 +115,6 @@ google-credentials.json
 service-account-key.json
 *-credentials.json
 config/google-credentials.json
-backend/config/google-credentials.json
 *.pem
 *.key
 
@@ -123,7 +122,6 @@ backend/config/google-credentials.json
 # Note: .dockerignore should be committed, so it's not ignored here
 
 # Testing
-coverage/
 .nyc_output/
 
 # Misc

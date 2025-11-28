@@ -1,3 +1,6 @@
+// Ensure environment variables are loaded (in case this file is required independently)
+require('../config/env')();
+
 const express = require('express');
 const multer = require('multer');
 const { Storage } = require('@google-cloud/storage');

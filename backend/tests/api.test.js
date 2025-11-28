@@ -1,5 +1,8 @@
+// Load environment variables before importing server
+require('../config/env')();
+
 const request = require('supertest');
-const app = require('./server');
+const app = require('../server');
 
 describe('VintageVision API Tests', () => {
   let authToken;

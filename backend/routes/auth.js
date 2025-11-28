@@ -1,3 +1,6 @@
+// Ensure environment variables are loaded (in case this file is required independently)
+require('../config/env')();
+
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');

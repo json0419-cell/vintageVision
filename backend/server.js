@@ -1,4 +1,8 @@
 // backend/server.js
+// Load environment variables FIRST, before any other imports
+// This ensures all modules have access to environment variables
+require('./config/env')();
+
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -7,8 +11,6 @@ const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 const cookieParser = require('cookie-parser');
-// Load environment variables: Load from .env file in backend directory
-require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const logger = require('./utils/logger');
 
@@ -75,6 +77,13 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.static(path.join(__dirname, '../frontend')));
 
 /* ------------------- API Routes (All must be after cookieParser) ------------------- */
+
+// Handle legacy /auth/google/callback route (redirect to /api/auth/google/callback)
+// This is needed if GOOGLE_REDIRECT_URI is configured as /auth/google/callback
+app.get('/auth/google/callback', (req, res) => {
+    const params = new URLSearchParams(req.query);
+    res.redirect(`/api/auth/google/callback?${params.toString()}`);
+});
 
 // Google OAuth login
 app.use('/api/auth', googleAuthRouter);

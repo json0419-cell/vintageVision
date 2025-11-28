@@ -1,4 +1,7 @@
 // backend/routes/analysis.js
+// Ensure environment variables are loaded (in case this file is required independently)
+require('../config/env')();
+
 const express = require('express');
 const vision = require('@google-cloud/vision');
 const { GoogleGenerativeAI } = require('@google/generative-ai');

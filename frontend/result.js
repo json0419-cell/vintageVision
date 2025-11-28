@@ -33,11 +33,21 @@ function renderResult(result) {
     let displayImageUrl = '';
     if (imageUrl) {
         let imgUrl = imageUrl;
+        
+        // Handle Google Photos URL format
+        // Some URLs already have parameters (e.g., =w400-h400), replace them
+        // Some URLs don't have parameters, add them
+        // Check if URL ends with a parameter pattern
         if (imgUrl.includes('=')) {
+            // Replace existing size parameter
             imgUrl = imgUrl.replace(/=[^&]*/, '=w800-h800');
         } else {
+            // Add size parameter
+            // For Google Photos URLs, append =w800-h800
             imgUrl = `${imgUrl}=w800-h800`;
         }
+        
+        Logger.log('[renderResult] Final image URL for proxy:', imgUrl.substring(0, 150));
         displayImageUrl = `/api/photos/proxy?url=${encodeURIComponent(imgUrl)}`;
     } else {
         Logger.warn('[renderResult] No image URL found in result');
@@ -93,7 +103,7 @@ function renderResult(result) {
                 <div class="section-title">Your photo</div>
                 <div class="preview">
                     <img src="${displayImageUrl}" alt="Analyzed photo" 
-                         onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'800\\' height=\\'800\\'%3E%3Crect fill=\\'%23ddd\\' width=\\'800\\' height=\\'800\\'/%3E%3Ctext x=\\'50%25\\' y=\\'50%25\\' text-anchor=\\'middle\\' dy=\\'.3em\\' fill=\\'%23999\\'%3EImage not available%3C/text%3E%3C/svg%3E';"
+                         data-fallback-url="${imageUrl}"
                          loading="lazy">
                 </div>
                 <div class="small" style="marginTop:16px; text-align:center">
@@ -102,6 +112,17 @@ function renderResult(result) {
             </div>
         </div>
     `;
+    
+    // Bind image error handler (for CSP compliance)
+    const img = container.querySelector('.preview img');
+    if (img) {
+        const placeholderSvg = 'data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'800\' height=\'800\'%3E%3Crect fill=\'%23ddd\' width=\'800\' height=\'800\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' text-anchor=\'middle\' dy=\'.3em\' fill=\'%23999\'%3EImage not available%3C/text%3E%3C/svg%3E';
+        img.addEventListener('error', function() {
+            const fallbackUrl = this.getAttribute('data-fallback-url');
+            Logger.error('[Image error] Failed to load image:', fallbackUrl || this.src);
+            this.src = placeholderSvg;
+        });
+    }
     
     // Bind chip click events (using event delegation)
     setupChipClickHandlers(container);

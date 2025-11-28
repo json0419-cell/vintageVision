@@ -1,4 +1,7 @@
 // backend/routes/photos.js
+// Ensure environment variables are loaded (in case this file is required independently)
+require('../config/env')();
+
 const express = require('express');
 const axios = require('axios');
 const qs = require('qs');
@@ -443,7 +446,17 @@ router.get('/photos/proxy', async (req, res) => {
         
         // Decode URL
         const imageUrl = decodeURIComponent(url);
-        logger.info(`[/api/photos/proxy] Proxying image URL: ${imageUrl.substring(0, 100)}...`);
+        logger.info(`[/api/photos/proxy] Proxying image URL: ${imageUrl.substring(0, 150)}...`);
+        logger.info(`[/api/photos/proxy] Full URL length: ${imageUrl.length} characters`);
+        
+        // Validate URL format
+        if (!imageUrl.startsWith('http://') && !imageUrl.startsWith('https://')) {
+            logger.error('[/api/photos/proxy] Invalid URL format:', imageUrl.substring(0, 100));
+            return res.status(400).json({ 
+                error: 'Invalid URL format',
+                details: 'URL must start with http:// or https://'
+            });
+        }
         
         // Use access token to get image
         const imageResponse = await axios.get(imageUrl, {
@@ -451,32 +464,54 @@ router.get('/photos/proxy', async (req, res) => {
                 Authorization: `Bearer ${accessToken}`,
             },
             responseType: 'arraybuffer',
+            timeout: 30000, // 30 second timeout
+            maxRedirects: 5,
+            validateStatus: (status) => status < 500, // Don't throw on 4xx errors, we'll handle them
         }).catch(async (error) => {
-            // If token expired, try refreshing
-            if (error.response?.status === 401 && refreshToken) {
-                logger.info('[/api/photos/proxy] Token expired, refreshing...');
-                const newToken = await refreshAccessToken(refreshToken);
-                
-                // Update cookie
-                const cookieOptions = {
-                    httpOnly: true,
-                    secure: process.env.NODE_ENV === 'production',
-                    sameSite: 'lax',
-                    path: '/',
-                    maxAge: 7 * 24 * 60 * 60 * 1000,
-                };
-                res.cookie('google_access_token', newToken, cookieOptions);
-                
-                // Retry
-                return await axios.get(imageUrl, {
-                    headers: {
-                        Authorization: `Bearer ${newToken}`,
-                    },
-                    responseType: 'arraybuffer',
-                });
+            // If token expired or forbidden, try refreshing
+            if ((error.response?.status === 401 || error.response?.status === 403) && refreshToken) {
+                logger.info(`[/api/photos/proxy] Token ${error.response?.status === 401 ? 'expired' : 'forbidden'}, refreshing...`);
+                try {
+                    const newToken = await refreshAccessToken(refreshToken);
+                    
+                    // Update cookie
+                    const cookieOptions = {
+                        httpOnly: true,
+                        secure: process.env.NODE_ENV === 'production',
+                        sameSite: 'lax',
+                        path: '/',
+                        maxAge: 7 * 24 * 60 * 60 * 1000,
+                    };
+                    res.cookie('google_access_token', newToken, cookieOptions);
+                    
+                    // Retry with new token
+                    return await axios.get(imageUrl, {
+                        headers: {
+                            Authorization: `Bearer ${newToken}`,
+                        },
+                        responseType: 'arraybuffer',
+                        timeout: 30000,
+                        maxRedirects: 5,
+                        validateStatus: (status) => status < 500,
+                    });
+                } catch (refreshError) {
+                    logger.error('[/api/photos/proxy] Token refresh failed:', refreshError.message);
+                    // If refresh fails, throw original error
+                    throw error;
+                }
             }
             throw error;
         });
+
+        // Check if response is successful
+        if (!imageResponse || imageResponse.status >= 400) {
+            const errorMsg = `Failed to fetch image: ${imageResponse?.status || 'unknown status'}`;
+            logger.error(`[/api/photos/proxy] ${errorMsg}`);
+            return res.status(imageResponse?.status || 500).json({
+                error: 'Failed to fetch image',
+                details: errorMsg,
+            });
+        }
 
         // Set correct Content-Type
         const contentType = imageResponse.headers['content-type'] || 'image/jpeg';
@@ -488,7 +523,11 @@ router.get('/photos/proxy', async (req, res) => {
         logger.error('[/api/photos/proxy] error:', {
             message: err.message,
             status: err.response?.status,
-            url: url?.substring(0, 100)
+            statusText: err.response?.statusText,
+            url: url?.substring(0, 100),
+            decodedUrl: decodeURIComponent(url || '').substring(0, 100),
+            responseData: err.response?.data ? (typeof err.response.data === 'string' ? err.response.data.substring(0, 200) : JSON.stringify(err.response.data).substring(0, 200)) : undefined,
+            stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
         });
         
         // If 401 or 403, return clearer error
@@ -499,9 +538,22 @@ router.get('/photos/proxy', async (req, res) => {
             });
         }
         
+        // If 404, image might not exist
+        if (err.response?.status === 404) {
+            return res.status(404).json({
+                error: 'Image not found',
+                details: 'The requested image could not be found. It may have been deleted or the URL is invalid.',
+            });
+        }
+        
+        // For other errors, return detailed error in development
+        const errorDetails = process.env.NODE_ENV === 'development' 
+            ? err.message 
+            : 'Failed to load image. Please try again.';
+        
         res.status(err.response?.status || 500).json({
             error: 'Failed to proxy image',
-            details: err.message,
+            details: errorDetails,
         });
     }
 });
