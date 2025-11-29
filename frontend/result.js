@@ -25,11 +25,12 @@ function renderResult(result) {
     const geminiResult = result.geminiResult || {};
     // Prefer baseUrl, then imageUrl
     const imageUrl = result.baseUrl || result.imageUrl || '';
-    
+
     Logger.log('[renderResult] Image URL:', imageUrl);
     Logger.log('[renderResult] Full result:', result);
 
-    // Build image proxy URL
+    //
+    // Build image proxy URL (include photoId so backend can refresh stale baseUrl)
     let displayImageUrl = '';
     if (imageUrl) {
         let imgUrl = imageUrl;
@@ -38,10 +39,16 @@ function renderResult(result) {
         } else {
             imgUrl = `${imgUrl}=w800-h800`;
         }
-        displayImageUrl = `/api/photos/proxy?url=${encodeURIComponent(imgUrl)}`;
+
+        const photoIdForProxy = result.photoId || result.docId || '';
+        const baseProxy = `/api/photos/proxy?url=${encodeURIComponent(imgUrl)}`;
+        displayImageUrl = photoIdForProxy
+            ? `${baseProxy}&photoId=${encodeURIComponent(photoIdForProxy)}`
+            : baseProxy;
     } else {
         Logger.warn('[renderResult] No image URL found in result');
     }
+
 
     const container = DOM.getElement('resultContainer');
     container.innerHTML = `

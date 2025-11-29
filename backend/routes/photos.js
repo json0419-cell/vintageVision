@@ -424,73 +424,148 @@ router.get('/photos/picker/items', async (req, res) => {
 
 /**
  * Proxy Google Photos images (solves CORS and 403 issues)
- * GET /api/photos/proxy?url=...
+ * GET /api/photos/proxy?url=...&photoId=...
+ *
+ * We try, in order:
+ *  1) Fetch the provided baseUrl with the current access token.
+ *  2) If the token is expired (401/403) we refresh it and retry.
+ *  3) If Google returns 403/404 for the baseUrl and we have a photoId,
+ *     we call the Photos Library API to get a fresh baseUrl and try again.
  */
 router.get('/photos/proxy', async (req, res) => {
-    const { url } = req.query;
-    
+    const { url, photoId } = req.query;
+
     if (!url) {
         return res.status(400).json({ error: 'URL parameter is required' });
     }
 
     try {
         const { token: accessToken, refreshToken } = await getAccessTokenFromCookies(req, res);
-        
+
         if (!accessToken) {
             logger.error('[/api/photos/proxy] No access token available');
             return res.status(401).json({ error: 'No access token available' });
         }
-        
-        // Decode URL
-        const imageUrl = decodeURIComponent(url);
-        logger.info(`[/api/photos/proxy] Proxying image URL: ${imageUrl.substring(0, 100)}...`);
-        
-        // Use access token to get image
-        const imageResponse = await axios.get(imageUrl, {
-            headers: {
-                Authorization: `Bearer ${accessToken}`,
-            },
-            responseType: 'arraybuffer',
-        }).catch(async (error) => {
-            // If token expired, try refreshing
-            if (error.response?.status === 401 && refreshToken) {
-                logger.info('[/api/photos/proxy] Token expired, refreshing...');
-                const newToken = await refreshAccessToken(refreshToken);
-                
-                // Update cookie
-                const cookieOptions = {
-                    httpOnly: true,
-                    secure: process.env.NODE_ENV === 'production',
-                    sameSite: 'lax',
-                    path: '/',
-                    maxAge: 7 * 24 * 60 * 60 * 1000,
-                };
-                res.cookie('google_access_token', newToken, cookieOptions);
-                
-                // Retry
-                return await axios.get(imageUrl, {
-                    headers: {
-                        Authorization: `Bearer ${newToken}`,
-                    },
-                    responseType: 'arraybuffer',
-                });
-            }
-            throw error;
-        });
 
-        // Set correct Content-Type
+        const originalUrl = decodeURIComponent(url);
+        logger.info(
+            `[/api/photos/proxy] Proxying image URL: ${originalUrl.substring(0, 100)}... (photoId=${photoId || 'n/a'})`
+        );
+
+        // Helper: download an image URL with the given token (if any)
+        const fetchImage = async (imageUrl, token) => {
+            const headers = {};
+            if (token) {
+                headers.Authorization = `Bearer ${token}`;
+            }
+            return axios.get(imageUrl, {
+                headers,
+                responseType: 'arraybuffer',
+            });
+        };
+
+        let imageResponse;
+        let activeToken = accessToken;
+        let activeUrl = originalUrl;
+
+        // --- First attempt: use existing token and URL ---
+        try {
+            imageResponse = await fetchImage(activeUrl, activeToken);
+        } catch (error) {
+            const status = error.response?.status;
+
+            // If token looks expired, try refreshing and retry once
+            if ((status === 401 || status === 403) && refreshToken) {
+                try {
+                    logger.info('[/api/photos/proxy] Token may be expired, refreshing...');
+                    const newToken = await refreshAccessToken(refreshToken);
+
+                    // Update cookie so subsequent requests use the fresh token
+                    const cookieOptions = {
+                        httpOnly: true,
+                        secure: process.env.NODE_ENV === 'production',
+                        sameSite: 'lax',
+                        path: '/',
+                        maxAge: 7 * 24 * 60 * 60 * 1000,
+                    };
+                    res.cookie('google_access_token', newToken, cookieOptions);
+                    activeToken = newToken;
+
+                    imageResponse = await fetchImage(activeUrl, activeToken);
+                } catch (refreshErr) {
+                    logger.error('[/api/photos/proxy] Token refresh failed while proxying image:', {
+                        message: refreshErr.message,
+                        status: refreshErr.response?.status,
+                    });
+                    // fall through and handle with outer error
+                }
+            }
+
+            // If we still don't have imageResponse and we know the photoId, try to get a fresh baseUrl
+            if (!imageResponse && (status === 403 || status === 404) && photoId) {
+                try {
+                    logger.info(
+                        `[/api/photos/proxy] Base URL denied with status ${status}, attempting mediaItems.get for photoId=${photoId}`
+                    );
+                    const mediaResp = await axios.get(
+                        `https://photoslibrary.googleapis.com/v1/mediaItems/${encodeURIComponent(photoId)}`,
+                        {
+                            headers: {
+                                Authorization: `Bearer ${activeToken}`,
+                            },
+                        }
+                    );
+
+                    const newBaseUrl = mediaResp.data?.baseUrl;
+                    if (!newBaseUrl) {
+                        throw new Error('No baseUrl returned from mediaItems.get');
+                    }
+
+                    // Preserve any size parameters from the original URL if present
+                    let sizedUrl = newBaseUrl;
+                    const sizeMatch = originalUrl.match(/(=w\d+-h\d+.*)$/);
+                    if (sizeMatch) {
+                        sizedUrl = newBaseUrl + sizeMatch[1];
+                    } else {
+                        sizedUrl = `${newBaseUrl}=w400-h400`;
+                    }
+
+                    logger.info(
+                        `[/api/photos/proxy] Using refreshed baseUrl for photoId=${photoId}: ${sizedUrl.substring(0, 100)}...`
+                    );
+                    activeUrl = sizedUrl;
+                    imageResponse = await fetchImage(activeUrl, activeToken);
+                } catch (refreshBaseErr) {
+                    logger.error(
+                        '[/api/photos/proxy] Failed to refresh baseUrl via Photos Library API:',
+                        {
+                            message: refreshBaseErr.message,
+                            status: refreshBaseErr.response?.status,
+                        }
+                    );
+                    throw error; // fall through to outer catch with original error
+                }
+            }
+
+            // If none of the above paths produced an imageResponse, rethrow
+            if (!imageResponse) {
+                throw error;
+            }
+        }
+
+        // --- Success: send proxied bytes back to browser ---
         const contentType = imageResponse.headers['content-type'] || 'image/jpeg';
         res.set('Content-Type', contentType);
         res.set('Cache-Control', 'public, max-age=3600'); // Cache 1 hour
-        
+
         res.send(Buffer.from(imageResponse.data));
     } catch (err) {
         logger.error('[/api/photos/proxy] error:', {
             message: err.message,
             status: err.response?.status,
-            url: url?.substring(0, 100)
+            url: url?.substring(0, 100),
         });
-        
+
         // If 401 or 403, return clearer error
         if (err.response?.status === 401 || err.response?.status === 403) {
             return res.status(err.response.status).json({
@@ -498,7 +573,7 @@ router.get('/photos/proxy', async (req, res) => {
                 details: 'Authentication failed. Please try refreshing the page.',
             });
         }
-        
+
         res.status(err.response?.status || 500).json({
             error: 'Failed to proxy image',
             details: err.message,

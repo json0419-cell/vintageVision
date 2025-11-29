@@ -1,31 +1,37 @@
 const winston = require('winston');
+const path = require('path');
+const fs = require('fs');
 
-const logger = winston.createLogger({
-  level: process.env.LOG_LEVEL || 'info',
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    winston.format.errors({ stack: true }),
-    winston.format.json()
-  ),
-  defaultMeta: { service: 'vintage-vision-api' },
-  transports: [
-    new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
-    new winston.transports.File({ filename: 'logs/combined.log' }),
-  ],
-});
+// App Engine Standard cannot write to arbitrary directories.
+// Only /tmp is writable. When local, use ./logs
+const isProd = process.env.GAE_ENV === 'standard';
 
-// If we're not in production, log to the console as well
-if (process.env.NODE_ENV !== 'production') {
-  logger.add(new winston.transports.Console({
-    format: winston.format.combine(
-      winston.format.colorize(),
-      winston.format.simple()
-    )
-  }));
+const logDir = isProd
+    ? '/tmp/logs'
+    : path.join(__dirname, '../../logs');
+
+// Ensure directory exists (locally and /tmp in prod)
+if (!fs.existsSync(logDir)) {
+    fs.mkdirSync(logDir, { recursive: true });
 }
 
+const logger = winston.createLogger({
+    level: 'info',
+    format: winston.format.combine(
+        winston.format.timestamp(),
+        winston.format.json()
+    ),
+    transports: [
+        // Console logging always works and is visible in Cloud Logs
+        new winston.transports.Console(),
+
+        // File logging only when local or allowed path
+        new winston.transports.File({
+            filename: path.join(logDir, 'server.log'),
+            maxsize: 5242880,
+            maxFiles: 5
+        })
+    ]
+});
+
 module.exports = logger;
-
-
-
-

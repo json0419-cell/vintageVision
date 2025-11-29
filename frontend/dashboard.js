@@ -211,7 +211,7 @@ function renderOriginalCarousel(items) {
         
         // Check if baseUrl exists
         const baseUrl = item.baseUrl || item.imageUrl;
-        
+
         if (baseUrl) {
             // Build original URL (with size parameters)
             if (baseUrl.includes('=')) {
@@ -219,12 +219,18 @@ function renderOriginalCarousel(items) {
             } else {
                 imgUrl = `${baseUrl}=w400-h400`;
             }
-            
+
             // Use backend proxy to avoid CORS and 403 issues
-            proxyUrl = `/api/photos/proxy?url=${encodeURIComponent(imgUrl)}`;
+            // Include photoId so backend can refresh stale baseUrl if needed
+            const photoIdForProxy = item.photoId || item.id || '';
+            const baseProxy = `/api/photos/proxy?url=${encodeURIComponent(imgUrl)}`;
+            proxyUrl = photoIdForProxy
+                ? `${baseProxy}&photoId=${encodeURIComponent(photoIdForProxy)}`
+                : baseProxy;
         } else {
             Logger.warn(`[renderOriginalCarousel] No baseUrl for item ${idx}:`, item);
         }
+
         
         const filename = item.filename || item.photoId || 'Photo';
         // Truncate long filenames
@@ -489,7 +495,7 @@ function renderAnalyzedCarousel(items) {
     inner.innerHTML = items.map((item, idx) => {
         let imgUrl = '';
         let proxyUrl = '';
-        
+
         if (item.baseUrl || item.imageUrl) {
             const url = item.baseUrl || item.imageUrl;
             if (url.includes('=')) {
@@ -497,8 +503,15 @@ function renderAnalyzedCarousel(items) {
             } else {
                 imgUrl = `${url}=w400-h400`;
             }
-            proxyUrl = `/api/photos/proxy?url=${encodeURIComponent(imgUrl)}`;
+
+            // Include photoId so backend can refresh stale baseUrl
+            const photoIdForProxy = item.photoId || item.docId || '';
+            const baseProxy = `/api/photos/proxy?url=${encodeURIComponent(imgUrl)}`;
+            proxyUrl = photoIdForProxy
+                ? `${baseProxy}&photoId=${encodeURIComponent(photoIdForProxy)}`
+                : baseProxy;
         }
+
         
         const era = item.geminiResult?.era_primary || 'Unknown';
         const resultId = item.id;

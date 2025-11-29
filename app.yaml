@@ -1,36 +1,79 @@
 # Google App Engine configuration
-runtime: nodejs18
+runtime: nodejs20
+entrypoint: node backend/server.js
+env: standard
+
+handlers:
+  # Static frontend assets (served directly)
+  - url: /images
+    static_dir: frontend/images
+
+  - url: /style\.css
+    static_files: frontend/style.css
+    upload: frontend/style\.css
+
+  - url: /script\.js
+    static_files: frontend/script.js
+    upload: frontend/script\.js
+
+  - url: /nav-auth\.js
+    static_files: frontend/nav-auth.js
+    upload: frontend/nav-auth\.js
+
+  - url: /utils\.js
+    static_files: frontend/utils.js
+    upload: frontend/utils\.js
+
+  - url: /dashboard\.js
+    static_files: frontend/dashboard.js
+    upload: frontend/dashboard\.js
+
+  # Static HTML pages
+  - url: /signin\.html
+    static_files: frontend/signin.html
+    upload: frontend/signin\.html
+
+  - url: /dashboard\.html
+    static_files: frontend/dashboard.html
+    upload: frontend/dashboard\.html
+
+  - url: /result\.html
+    static_files: frontend/result.html
+    upload: frontend/result\.html
+
+  - url: /about\.html
+    static_files: frontend/about.html
+    upload: frontend/about\.html
+
+  - url: /contact\.html
+    static_files: frontend/contact.html
+    upload: frontend/contact\.html
+
+  # Root / and anything not matched above → Node app
+  - url: /.*
+    script: auto
 
 env_variables:
   NODE_ENV: production
-  GOOGLE_CLOUD_PROJECT_ID: PROJECT_ID
-  GOOGLE_CLOUD_REGION: us-central1
+  PORT: "8080"
+  GOOGLE_CLIENT_ID: 6308928756-tgft53l4ggbeht7hc77rlij18mg8t7ha.apps.googleusercontent.com
+  GOOGLE_CLIENT_SECRET: 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
+  GOOGLE_REDIRECT_URI: https://cs651-project2.uw.r.appspot.com/api/auth/google/callback
+  GOOGLE_CLOUD_PROJECT_ID: cs651-project2
+  GEMINI_API_KEY: AIzaSyB9UipWFLGX_WRD6yMvzAdHPpzWqzmGE7k
+  GOOGLE_PHOTOS_CLIENT_ID: '6308928756-tgft53l4ggbeht7hc77rlij18mg8t7ha.apps.googleusercontent.com'
+  GOOGLE_PHOTOS_CLIENT_SECRET: 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
+  GOOGLE_APPLICATION_CREDENTIALS: backend/config/google-credentials.json
+  SESSION_SECRET: supersecret123
+# Frontend base URL (for CORS + redirects)
+  FRONTEND_URL: "https://cs651-project2.uw.r.appspot.com"
 
 automatic_scaling:
+  target_cpu_utilization: 0.65
   min_instances: 1
-  max_instances: 10
-  target_cpu_utilization: 0.6
-  target_throughput_utilization: 0.6
+  max_instances: 3
 
-resources:
-  cpu: 1
-  memory_gb: 1
-  disk_size_gb: 10
 
-handlers:
-- url: /api/.*
-  script: auto
-  secure: always
-
-- url: /.*
-  static_files: frontend/index.html
-  upload: frontend/index.html
-  secure: always
-
-- url: /(.*\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot))
-  static_files: frontend/\1
-  upload: frontend/(.*\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot))
-  secure: always
 
 
 

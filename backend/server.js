@@ -1,4 +1,6 @@
 // backend/server.js
+// backend/server.js
+console.log("SERVER.JS LOADED");
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -7,28 +9,28 @@ const compression = require('compression');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
 const cookieParser = require('cookie-parser');
-// Load environment variables: Load from .env file in backend directory
+
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 
 const logger = require('./utils/logger');
 
 // Routes
-const authRoutes = require('./routes/auth');          // Old JWT routes (optional)
-const googleAuthRouter = require('./routes/googleAuth'); // Google OAuth
-const photosRouter = require('./routes/photos');         // Google Photos
-const meRouter = require('./routes/me');                 // /api/auth/me
-const dashboardRoutes = require('./routes/dashboard');   // Dashboard
-const analysisRouter = require('./routes/analysis');     // Vision + Gemini analysis
+const authRoutes = require('./routes/auth');              // (optional legacy)
+const googleAuthRouter = require('./routes/googleAuth');  // Google OAuth
+const photosRouter = require('./routes/photos');          // Google Photos
+const meRouter = require('./routes/me');                  // /api/auth/me
+const dashboardRoutes = require('./routes/dashboard');    // Dashboard
+const analysisRouter = require('./routes/analysis');      // Vision + Gemini
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 
-/* ------------------- Global Middleware (Order is Very Important) ------------------- */
+/* ------------------- Global Middleware ------------------- */
 
-// ⭐ 1. Cookie parsing (must be first)
+// 1. Cookies
 app.use(cookieParser());
 
-// 2. Helmet security policy
+// 2. Helmet
 app.use(
     helmet({
         contentSecurityPolicy: {
@@ -37,13 +39,13 @@ app.use(
                 styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
                 scriptSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
                 imgSrc: ["'self'", "data:", "https:"],
-                connectSrc: ["'self'", "https://cdn.jsdelivr.net"], // Allow sourcemap
+                connectSrc: ["'self'", "https://cdn.jsdelivr.net"],
             },
         },
     })
 );
 
-// 3. Rate limiting (protect /api/)
+// 3. Rate limiting
 const limiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 100,
@@ -51,7 +53,7 @@ const limiter = rateLimit({
 });
 app.use('/api/', limiter);
 
-// 4. CORS (allow frontend to include cookies)
+// 4. CORS
 app.use(
     cors({
         origin: process.env.FRONTEND_URL || 'http://localhost:3000',
@@ -71,30 +73,18 @@ app.use(
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// 7. Static files
+// 7. Static files (for local dev; in prod, App Engine also serves via handlers)
 app.use(express.static(path.join(__dirname, '../frontend')));
 
-/* ------------------- API Routes (All must be after cookieParser) ------------------- */
+/* ------------------- API Routes ------------------- */
 
-// Google OAuth login
 app.use('/api/auth', googleAuthRouter);
-
-// If still using JWT authRoutes (can delete)
 app.use('/api/auth', authRoutes);
-
-// Google Photos
 app.use('/api', photosRouter);
-
-// Current user info
 app.use('/api', meRouter);
-
-// Dashboard API
 app.use('/api/dashboard', dashboardRoutes);
-
-// Vision + Gemini analysis
 app.use('/api/analysis', analysisRouter);
 
-// Health check
 app.get('/api/health', (req, res) => {
     res.status(200).json({
         status: 'OK',
@@ -102,25 +92,41 @@ app.get('/api/health', (req, res) => {
     });
 });
 
-/* ------------------- Frontend Routes (SPA style) ------------------- */
+/* ------------------- Frontend Fallback ------------------- */
 
-// All non-/api requests → return index.html
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../frontend/index.html'));
+// IMPORTANT: use absolute path from __dirname; this is what failed before.
+app.get('*', (req, res, next) => {
+    const indexPath = path.join(__dirname, '../frontend/index.html');
+    res.sendFile(indexPath, (err) => {
+        if (err) {
+            // Let our error middleware handle it instead of sending 500 directly
+            next(err);
+        }
+    });
 });
 
 /* ------------------- Error Handling ------------------- */
 
 app.use((err, req, res, next) => {
-    logger.error('Unhandled error:', err);
-    res.status(500).json({
+    console.error('🔥 UNHANDLED ERROR 🔥');
+    console.error(err);
+
+    logger.error('Unhandled error:', {
+        message: err.message,
+        stack: err.stack,
+        name: err.name,
+    });
+
+    res.status(err.statusCode || 500).json({
         error: 'Internal Server Error',
         message:
-            process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong',
+            process.env.NODE_ENV === 'development'
+                ? err.message
+                : 'Something went wrong',
     });
 });
 
-// 404
+// 404 (API only – most non-API hits are caught by index.html)
 app.use((req, res) => {
     res.status(404).json({ error: 'Route not found' });
 });
