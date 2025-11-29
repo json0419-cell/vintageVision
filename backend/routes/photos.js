@@ -459,49 +459,77 @@ router.get('/photos/proxy', async (req, res) => {
         }
         
         // Use access token to get image
-        const imageResponse = await axios.get(imageUrl, {
-            headers: {
-                Authorization: `Bearer ${accessToken}`,
-            },
-            responseType: 'arraybuffer',
-            timeout: 30000, // 30 second timeout
-            maxRedirects: 5,
-            validateStatus: (status) => status < 500, // Don't throw on 4xx errors, we'll handle them
-        }).catch(async (error) => {
-            // If token expired or forbidden, try refreshing
-            if ((error.response?.status === 401 || error.response?.status === 403) && refreshToken) {
-                logger.info(`[/api/photos/proxy] Token ${error.response?.status === 401 ? 'expired' : 'forbidden'}, refreshing...`);
-                try {
-                    const newToken = await refreshAccessToken(refreshToken);
-                    
-                    // Update cookie
-                    const cookieOptions = {
-                        httpOnly: true,
-                        secure: process.env.NODE_ENV === 'production',
-                        sameSite: 'lax',
-                        path: '/',
-                        maxAge: 7 * 24 * 60 * 60 * 1000,
-                    };
-                    res.cookie('google_access_token', newToken, cookieOptions);
-                    
-                    // Retry with new token
-                    return await axios.get(imageUrl, {
-                        headers: {
-                            Authorization: `Bearer ${newToken}`,
-                        },
-                        responseType: 'arraybuffer',
-                        timeout: 30000,
-                        maxRedirects: 5,
-                        validateStatus: (status) => status < 500,
-                    });
-                } catch (refreshError) {
-                    logger.error('[/api/photos/proxy] Token refresh failed:', refreshError.message);
-                    // If refresh fails, throw original error
-                    throw error;
-                }
-            }
+        let imageResponse;
+        try {
+            imageResponse = await axios.get(imageUrl, {
+                headers: {
+                    Authorization: `Bearer ${accessToken}`,
+                },
+                responseType: 'arraybuffer',
+                timeout: 30000, // 30 second timeout
+                maxRedirects: 5,
+                validateStatus: (status) => status < 500, // Don't throw on 4xx errors, we'll handle them
+            });
+        } catch (error) {
+            // Network errors or 5xx errors
+            logger.error('[/api/photos/proxy] Network error:', error.message);
             throw error;
-        });
+        }
+
+        // Check if response indicates authentication failure (401 or 403)
+        // If so, try refreshing token and retry
+        if (imageResponse && (imageResponse.status === 401 || imageResponse.status === 403) && refreshToken) {
+            logger.info(`[/api/photos/proxy] Token ${imageResponse.status === 401 ? 'expired' : 'forbidden'}, refreshing...`);
+            try {
+                const newToken = await refreshAccessToken(refreshToken);
+                
+                // Update cookie
+                const cookieOptions = {
+                    httpOnly: true,
+                    secure: process.env.NODE_ENV === 'production',
+                    sameSite: 'lax',
+                    path: '/',
+                    maxAge: 7 * 24 * 60 * 60 * 1000,
+                };
+                res.cookie('google_access_token', newToken, cookieOptions);
+                
+                // Retry with new token
+                imageResponse = await axios.get(imageUrl, {
+                    headers: {
+                        Authorization: `Bearer ${newToken}`,
+                    },
+                    responseType: 'arraybuffer',
+                    timeout: 30000,
+                    maxRedirects: 5,
+                    validateStatus: (status) => status < 500,
+                });
+                
+                logger.info('[/api/photos/proxy] Retry with refreshed token successful');
+            } catch (refreshError) {
+                logger.error('[/api/photos/proxy] Token refresh or retry failed:', {
+                    refreshError: refreshError.message,
+                    status: refreshError.response?.status,
+                    responseData: refreshError.response?.data
+                });
+                
+                // Check if refresh token itself is invalid/expired
+                if (refreshError.response?.status === 400 || 
+                    refreshError.message?.includes('refresh token') ||
+                    refreshError.message?.includes('invalid_grant')) {
+                    return res.status(401).json({
+                        error: 'Session expired',
+                        details: 'Your session has expired. Please log in again.',
+                        requiresReauth: true
+                    });
+                }
+                
+                // If refresh fails for other reasons, return the original 401/403 error
+                return res.status(imageResponse.status).json({
+                    error: 'Failed to access image',
+                    details: 'Authentication failed. Please try refreshing the page or logging in again.',
+                });
+            }
+        }
 
         // Check if response is successful
         if (!imageResponse || imageResponse.status >= 400) {
